@@ -615,20 +615,11 @@ class _SchemaWalker {
   }
 
   SchemaDialect _detectDocumentDialect(Uri uri, Map<String, dynamic> document) {
-    if (document is Map<String, dynamic>) {
-      return _dialectForSchema(
-        document,
-        _SchemaLocation(uri: uri, pointer: '#'),
-        _options.defaultDialect,
-      );
-    }
-    if (_options.defaultDialect == null) {
-      _schemaError(
-        'No JSON Schema dialect declared and no default dialect configured.',
-        _SchemaLocation(uri: uri, pointer: '#'),
-      );
-    }
-    return _options.defaultDialect!;
+    return _dialectForSchema(
+      document,
+      _SchemaLocation(uri: uri, pointer: '#'),
+      _options.defaultDialect,
+    );
   }
 
   SchemaDialect _dialectForSchema(
@@ -687,7 +678,7 @@ class _SchemaWalker {
     if (vocab is! Map<String, dynamic>) {
       _schemaError('Expected "\$vocabulary" to be an object', location);
     }
-    for (final entry in (vocab as Map<String, dynamic>).entries) {
+    for (final entry in vocab.entries) {
       final value = entry.value;
       if (value is! bool) {
         _schemaError('Expected "\$vocabulary" values to be booleans', location);
