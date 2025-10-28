@@ -83,7 +83,8 @@ class Pubspec {
     remaining.remove('version');
     var unmatched = Map<String, dynamic>.from(remaining);
     if (unmatched.isNotEmpty) {
-      throw ArgumentError('Unexpected additional properties: \${unmatched.keys.join(', ')}');
+      final unexpected = unmatched.keys.join(', ');
+      throw ArgumentError('Unexpected additional properties: \$unexpected');
     }
     return Pubspec(
       environment: environment,
@@ -120,7 +121,8 @@ class PubspecEnvironment {
     remaining.remove('sdk');
     var unmatched = Map<String, dynamic>.from(remaining);
     if (unmatched.isNotEmpty) {
-      throw ArgumentError('Unexpected additional properties: \${unmatched.keys.join(', ')}');
+      final unexpected = unmatched.keys.join(', ');
+      throw ArgumentError('Unexpected additional properties: \$unexpected');
     }
     return PubspecEnvironment(
       flutter: flutter,
@@ -211,7 +213,8 @@ class Pubspec {
     remaining.remove('version');
     var unmatched = Map<String, dynamic>.from(remaining);
     if (unmatched.isNotEmpty) {
-      throw ArgumentError('Unexpected additional properties: \${unmatched.keys.join(', ')}');
+      final unexpected = unmatched.keys.join(', ');
+      throw ArgumentError('Unexpected additional properties: \$unexpected');
     }
     return Pubspec(
       environment: environment,
@@ -254,7 +257,8 @@ class PubspecEnvironment {
     remaining.remove('sdk');
     var unmatched = Map<String, dynamic>.from(remaining);
     if (unmatched.isNotEmpty) {
-      throw ArgumentError('Unexpected additional properties: \${unmatched.keys.join(', ')}');
+      final unexpected = unmatched.keys.join(', ');
+      throw ArgumentError('Unexpected additional properties: \$unexpected');
     }
     return PubspecEnvironment(
       flutter: flutter,

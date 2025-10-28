@@ -51,7 +51,13 @@ void main() {
       expect(
         generated,
         contains(
-          "throw ArgumentError('Unexpected additional properties: \${unmatched.keys.join(', ')}');",
+          "final unexpected = unmatched.keys.join(', ');",
+        ),
+      );
+      expect(
+        generated,
+        contains(
+          "throw ArgumentError('Unexpected additional properties: \$unexpected');",
         ),
       );
     });

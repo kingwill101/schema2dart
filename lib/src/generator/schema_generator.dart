@@ -235,6 +235,15 @@ class SchemaGenerator {
       );
     }
 
+    final unevaluatedField = klass.unevaluatedPropertiesField;
+    if (unevaluatedField != null) {
+      _collectTypeDependencies(
+        unevaluatedField.valueType,
+        collected,
+        owner: klass.name,
+      );
+    }
+
     final patternField = klass.patternPropertiesField;
     if (patternField != null) {
       _collectTypeDependencies(
@@ -285,6 +294,17 @@ class SchemaGenerator {
       }
     } else if (ref is ListTypeRef) {
       _collectTypeDependencies(ref.itemType, out, owner: owner);
+      for (final type in ref.prefixItemTypes) {
+        _collectTypeDependencies(type, out, owner: owner);
+      }
+      final containsType = ref.containsType;
+      if (containsType != null) {
+        _collectTypeDependencies(containsType, out, owner: owner);
+      }
+      final unevaluatedItemsType = ref.unevaluatedItemsType;
+      if (unevaluatedItemsType != null) {
+        _collectTypeDependencies(unevaluatedItemsType, out, owner: owner);
+      }
     }
   }
 
@@ -761,6 +781,21 @@ class _SchemaEmitter {
         '  final ${additionalField.mapType()} ${additionalField.fieldName};',
       );
     }
+
+    final unevaluatedField = klass.unevaluatedPropertiesField;
+    if (unevaluatedField != null) {
+      if (unevaluatedField.description != null &&
+          unevaluatedField.description!.trim().isNotEmpty) {
+        _writeDocumentation(
+          buffer,
+          unevaluatedField.description!,
+          indent: '  ',
+        );
+      }
+      buffer.writeln(
+        '  final ${unevaluatedField.mapType()} ${unevaluatedField.fieldName};',
+      );
+    }
   }
 
   void _writeConstructor(
@@ -771,7 +806,8 @@ class _SchemaEmitter {
     final hasFields =
         klass.properties.isNotEmpty ||
         klass.patternPropertiesField != null ||
-        klass.additionalPropertiesField != null;
+        klass.additionalPropertiesField != null ||
+        klass.unevaluatedPropertiesField != null;
     if (!hasFields) {
       buffer.writeln('  const ${klass.name}()${superInitializer ?? ''};');
       return;
@@ -796,6 +832,11 @@ class _SchemaEmitter {
       buffer.writeln('    this.${additionalField.fieldName},');
     }
 
+    final unevaluatedField = klass.unevaluatedPropertiesField;
+    if (unevaluatedField != null) {
+      buffer.writeln('    this.${unevaluatedField.fieldName},');
+    }
+
     final initializerSuffix =
         superInitializer != null && superInitializer.isNotEmpty
         ? ' $superInitializer'
@@ -809,9 +850,12 @@ class _SchemaEmitter {
     );
     final patternField = klass.patternPropertiesField;
     final additionalField = klass.additionalPropertiesField;
+    final unevaluatedField = klass.unevaluatedPropertiesField;
     final needsUnmatched =
         patternField != null ||
         additionalField != null ||
+        unevaluatedField != null ||
+        klass.disallowUnevaluatedProperties ||
         !klass.allowAdditionalProperties;
     final needsRemaining = klass.properties.isNotEmpty || needsUnmatched;
     if (needsRemaining) {
@@ -899,10 +943,48 @@ class _SchemaEmitter {
       buffer.writeln('    }');
     }
 
-    if (!klass.allowAdditionalProperties) {
+    if (unevaluatedField != null) {
+      final valueType = unevaluatedField.valueType.dartType();
+      buffer.writeln(
+        '    Map<String, $valueType>? ${unevaluatedField.fieldName}Value;',
+      );
       buffer.writeln('    if (unmatched.isNotEmpty) {');
       buffer.writeln(
-        "      throw ArgumentError('Unexpected additional properties: \${unmatched.keys.join(', ')}');",
+        '      final ${unevaluatedField.fieldName}Map = <String, $valueType>{};',
+      );
+      buffer.writeln('      for (final entry in unmatched.entries) {');
+      buffer.writeln('        final value = entry.value;');
+      final converted = unevaluatedField.valueType.deserializeInline(
+        'value',
+        required: true,
+      );
+      buffer.writeln(
+        '        ${unevaluatedField.fieldName}Map[entry.key] = $converted;',
+      );
+      buffer.writeln('      }');
+      buffer.writeln(
+        '      ${unevaluatedField.fieldName}Value = ${unevaluatedField.fieldName}Map.isEmpty ? null : ${unevaluatedField.fieldName}Map;',
+      );
+      buffer.writeln('      unmatched = <String, dynamic>{};');
+      buffer.writeln('    } else {');
+      buffer.writeln('      ${unevaluatedField.fieldName}Value = null;');
+      buffer.writeln('    }');
+    }
+
+    if (!klass.allowAdditionalProperties ||
+        klass.disallowUnevaluatedProperties) {
+      final reasons = <String>[];
+      if (!klass.allowAdditionalProperties) {
+        reasons.add('additional');
+      }
+      if (klass.disallowUnevaluatedProperties) {
+        reasons.add('unevaluated');
+      }
+      final reasonText = reasons.join(' and ');
+      buffer.writeln('    if (unmatched.isNotEmpty) {');
+      buffer.writeln("      final unexpected = unmatched.keys.join(', ');");
+      buffer.writeln(
+        "      throw ArgumentError('Unexpected $reasonText properties: \$unexpected');",
       );
       buffer.writeln('    }');
     }
@@ -919,6 +1001,11 @@ class _SchemaEmitter {
     if (additionalField != null) {
       buffer.writeln(
         '      ${additionalField.fieldName}: ${additionalField.fieldName}Value,',
+      );
+    }
+    if (unevaluatedField != null) {
+      buffer.writeln(
+        '      ${unevaluatedField.fieldName}: ${unevaluatedField.fieldName}Value,',
       );
     }
     buffer.writeln('    );');
@@ -982,6 +1069,21 @@ class _SchemaEmitter {
       buffer.writeln('    if (${additionalField.fieldName} != null) {');
       buffer.writeln(
         '      ${additionalField.fieldName}!.forEach((key, value) {',
+      );
+      buffer.writeln('        map[key] = $converted;');
+      buffer.writeln('      });');
+      buffer.writeln('    }');
+    }
+
+    final unevaluatedField = klass.unevaluatedPropertiesField;
+    if (unevaluatedField != null) {
+      final converted = unevaluatedField.valueType.serializeInline(
+        'value',
+        required: true,
+      );
+      buffer.writeln('    if (${unevaluatedField.fieldName} != null) {');
+      buffer.writeln(
+        '      ${unevaluatedField.fieldName}!.forEach((key, value) {',
       );
       buffer.writeln('        map[key] = $converted;');
       buffer.writeln('      });');
@@ -1087,6 +1189,28 @@ class _SchemaEmitter {
         'itemPointer',
         '        ',
         patternField.fieldName,
+      );
+      buffer.writeln('      });');
+      buffer.writeln('    }');
+    }
+
+    final unevaluatedField = klass.unevaluatedPropertiesField;
+    if (unevaluatedField != null &&
+        _typeRequiresValidation(unevaluatedField.valueType)) {
+      final mapVar = '_${unevaluatedField.fieldName}Map';
+      buffer.writeln('    final $mapVar = ${unevaluatedField.fieldName};');
+      buffer.writeln('    if ($mapVar != null) {');
+      buffer.writeln('      $mapVar.forEach((key, value) {');
+      buffer.writeln(
+        '        final itemPointer = _appendJsonPointer(pointer, key);',
+      );
+      _writeNestedValidation(
+        buffer,
+        unevaluatedField.valueType,
+        'value',
+        'itemPointer',
+        '        ',
+        unevaluatedField.fieldName,
       );
       buffer.writeln('      });');
       buffer.writeln('    }');
@@ -1224,24 +1348,114 @@ class _SchemaEmitter {
       return;
     }
     if (ref is ListTypeRef) {
-      final indexVar = 'i_$suffix';
-      final itemVar = '_item$suffix';
+      final lengthVar = '_len$suffix';
+      final evaluatedVar = '_evaluated$suffix';
       buffer.writeln(
-        '${indent}for (var $indexVar = 0; $indexVar < $valueExpression.length; $indexVar++) {',
+        '${indent}final $lengthVar = $valueExpression.length;',
       );
       buffer.writeln(
-        '$indent  final itemPointer = _appendJsonPointer($pointerExpression, $indexVar.toString());',
+        '${indent}final $evaluatedVar = List<bool>.filled($lengthVar, false);',
       );
-      buffer.writeln('$indent  final $itemVar = $valueExpression[$indexVar];');
-      _writeNestedValidation(
-        buffer,
-        ref.itemType,
-        itemVar,
-        'itemPointer',
-        '$indent  ',
-        '${suffix}i',
-      );
-      buffer.writeln('$indent}');
+
+      for (var index = 0; index < ref.prefixItemTypes.length; index++) {
+        final prefixType = ref.prefixItemTypes[index];
+        buffer.writeln('$indent'
+            'if ($lengthVar > $index) {');
+        buffer.writeln(
+          "$indent  final itemPointer = _appendJsonPointer($pointerExpression, '$index');",
+        );
+        buffer.writeln(
+          '$indent  final item = $valueExpression[$index];',
+        );
+        _writeNestedValidation(
+          buffer,
+          prefixType,
+          'item',
+          'itemPointer',
+          '$indent  ',
+          '${suffix}p$index',
+        );
+        buffer.writeln('$indent  $evaluatedVar[$index] = true;');
+        buffer.writeln('$indent}');
+      }
+
+      final additionalStart = ref.prefixItemTypes.length;
+      if (!ref.allowAdditionalItems) {
+        final message = additionalStart == 0
+            ? 'No items allowed in array.'
+            : 'No additional items allowed beyond index ${additionalStart - 1}.';
+        buffer.writeln(
+          '$indent'
+          'if ($lengthVar > $additionalStart) {',
+        );
+        buffer.writeln(
+          '$indent  _throwValidationError($pointerExpression, "items", ${_stringLiteral(message)});',
+        );
+        buffer.writeln('$indent}');
+      } else {
+        buffer.writeln(
+          '$indent'
+          'for (var i = $additionalStart; i < $lengthVar; i++) {',
+        );
+        buffer.writeln(
+          '$indent  final itemPointer = _appendJsonPointer($pointerExpression, i.toString());',
+        );
+        buffer.writeln('$indent  final item = $valueExpression[i];');
+        _writeNestedValidation(
+          buffer,
+          ref.itemType,
+          'item',
+          'itemPointer',
+          '$indent  ',
+          '${suffix}i',
+        );
+        if (ref.itemsEvaluatesAdditionalItems) {
+          buffer.writeln('$indent  $evaluatedVar[i] = true;');
+        }
+        buffer.writeln('$indent}');
+      }
+
+      if (ref.unevaluatedItemsType != null ||
+          ref.disallowUnevaluatedItems) {
+        buffer.writeln(
+          '$indent'
+          'for (var i = 0; i < $lengthVar; i++) {',
+        );
+        buffer.writeln(
+          '$indent  if (!$evaluatedVar[i]) {',
+        );
+        final unevaluatedType = ref.unevaluatedItemsType;
+        if (unevaluatedType != null) {
+          buffer.writeln(
+            '$indent    final itemPointer = _appendJsonPointer($pointerExpression, i.toString());',
+          );
+          buffer.writeln(
+            '$indent    final item = $valueExpression[i];',
+          );
+          _writeNestedValidation(
+            buffer,
+            unevaluatedType,
+            'item',
+            'itemPointer',
+            '$indent    ',
+            '$suffix'
+            'u',
+          );
+          buffer.writeln('$indent    $evaluatedVar[i] = true;');
+          if (ref.disallowUnevaluatedItems) {
+            buffer.writeln('$indent    continue;');
+          }
+        }
+        if (ref.disallowUnevaluatedItems) {
+          buffer.writeln(
+            '$indent    _throwValidationError($pointerExpression, "unevaluatedItems", "Unexpected unevaluated item at index \$i.");',
+          );
+        }
+        buffer.writeln('$indent  }');
+        buffer.writeln('$indent}');
+      }
+
+      return;
     }
   }
 
@@ -1380,6 +1594,12 @@ bool _classNeedsValidation(IrClass klass, SchemaGeneratorOptions options) {
     return true;
   }
 
+  final unevaluatedField = klass.unevaluatedPropertiesField;
+  if (unevaluatedField != null &&
+      _typeRequiresValidation(unevaluatedField.valueType)) {
+    return true;
+  }
+
   return false;
 }
 
@@ -1388,7 +1608,24 @@ bool _typeRequiresValidation(TypeRef ref) {
     return true;
   }
   if (ref is ListTypeRef) {
-    return _typeRequiresValidation(ref.itemType);
+    if (_typeRequiresValidation(ref.itemType)) {
+      return true;
+    }
+    for (final type in ref.prefixItemTypes) {
+      if (_typeRequiresValidation(type)) {
+        return true;
+      }
+    }
+    final containsType = ref.containsType;
+    if (containsType != null && _typeRequiresValidation(containsType)) {
+      return true;
+    }
+    final unevaluatedItemsType = ref.unevaluatedItemsType;
+    if (unevaluatedItemsType != null &&
+        _typeRequiresValidation(unevaluatedItemsType)) {
+      return true;
+    }
+    return false;
   }
   return false;
 }

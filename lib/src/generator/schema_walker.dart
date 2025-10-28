@@ -542,17 +542,174 @@ class _SchemaWalker {
       }
 
       if (normalizedType == 'array') {
+        final prefixItemsRaw = workingSchema['prefixItems'];
+        final prefixPointer = _pointerChild(location.pointer, 'prefixItems');
+        final prefixItemTypes = <TypeRef>[];
+        if (prefixItemsRaw is List) {
+          for (var index = 0; index < prefixItemsRaw.length; index++) {
+            final element = prefixItemsRaw[index];
+            final elementPointer = _pointerChild(prefixPointer, '$index');
+            final pointerLocation = _SchemaLocation(
+              uri: location.uri,
+              pointer: elementPointer,
+            );
+            if (element is Map<String, dynamic>) {
+              final nameSuffix = suggestedClassName != null
+                  ? '${suggestedClassName}Prefix$index'
+                  : null;
+              prefixItemTypes.add(
+                _resolveSchema(
+                  element,
+                  pointerLocation,
+                  suggestedClassName: nameSuffix,
+                  dialect: activeDialect,
+                ),
+              );
+            } else if (element == true) {
+              prefixItemTypes.add(const DynamicTypeRef());
+            } else if (element == false) {
+              prefixItemTypes.add(const DynamicTypeRef());
+            } else {
+              prefixItemTypes.add(const DynamicTypeRef());
+            }
+          }
+        } else if (prefixItemsRaw != null && prefixItemsRaw is! List) {
+          _schemaError(
+            'Expected "prefixItems" to be an array of schemas',
+            _SchemaLocation(uri: location.uri, pointer: prefixPointer),
+          );
+        }
+
         final items = workingSchema['items'];
-        final itemPointer = _pointerChild(location.pointer, 'items');
-        final itemType = _resolveSchema(
-          items is Map<String, dynamic> ? items : null,
-          _SchemaLocation(uri: location.uri, pointer: itemPointer),
-          suggestedClassName: suggestedClassName != null
-              ? '${suggestedClassName}Item'
-              : null,
-          dialect: activeDialect,
+        var allowAdditionalItems = true;
+        var itemsEvaluatesAdditionalItems = false;
+        TypeRef itemType = const DynamicTypeRef();
+        if (items is Map<String, dynamic>) {
+          final itemPointer = _pointerChild(location.pointer, 'items');
+          itemType = _resolveSchema(
+            items,
+            _SchemaLocation(uri: location.uri, pointer: itemPointer),
+            suggestedClassName: suggestedClassName != null
+                ? '${suggestedClassName}Item'
+                : null,
+            dialect: activeDialect,
+          );
+          itemsEvaluatesAdditionalItems = true;
+        } else if (items is bool) {
+          if (!items) {
+            allowAdditionalItems = false;
+          } else {
+            itemsEvaluatesAdditionalItems = true;
+          }
+        } else if (items is List && prefixItemTypes.isEmpty) {
+          final legacyPointer = _pointerChild(location.pointer, 'items');
+          for (var index = 0; index < items.length; index++) {
+            final element = items[index];
+            final elementPointer = _pointerChild(legacyPointer, '$index');
+            final pointerLocation = _SchemaLocation(
+              uri: location.uri,
+              pointer: elementPointer,
+            );
+            if (element is Map<String, dynamic>) {
+              prefixItemTypes.add(
+                _resolveSchema(
+                  element,
+                  pointerLocation,
+                  suggestedClassName: suggestedClassName != null
+                      ? '${suggestedClassName}Item$index'
+                      : null,
+                  dialect: activeDialect,
+                ),
+              );
+            } else if (element == true) {
+              prefixItemTypes.add(const DynamicTypeRef());
+            } else if (element == false) {
+              prefixItemTypes.add(const DynamicTypeRef());
+            } else {
+              prefixItemTypes.add(const DynamicTypeRef());
+            }
+          }
+        }
+
+        TypeRef? containsType;
+        final containsRaw = workingSchema['contains'];
+        final containsPointer = _pointerChild(location.pointer, 'contains');
+        if (containsRaw is Map<String, dynamic>) {
+          containsType = _resolveSchema(
+            containsRaw,
+            _SchemaLocation(uri: location.uri, pointer: containsPointer),
+            suggestedClassName: suggestedClassName != null
+                ? '${suggestedClassName}Contains'
+                : null,
+            dialect: activeDialect,
+          );
+        } else if (containsRaw != null && containsRaw is! Map) {
+          _schemaError(
+            'Expected "contains" to be a schema object',
+            _SchemaLocation(uri: location.uri, pointer: containsPointer),
+          );
+        }
+
+        int? minContains;
+        final minContainsRaw = workingSchema['minContains'];
+        final minContainsPointer = _pointerChild(location.pointer, 'minContains');
+        if (minContainsRaw is int) {
+          minContains = minContainsRaw;
+        } else if (minContainsRaw != null) {
+          _schemaError(
+            '"minContains" must be an integer',
+            _SchemaLocation(uri: location.uri, pointer: minContainsPointer),
+          );
+        }
+
+        int? maxContains;
+        final maxContainsRaw = workingSchema['maxContains'];
+        final maxContainsPointer = _pointerChild(location.pointer, 'maxContains');
+        if (maxContainsRaw is int) {
+          maxContains = maxContainsRaw;
+        } else if (maxContainsRaw != null) {
+          _schemaError(
+            '"maxContains" must be an integer',
+            _SchemaLocation(uri: location.uri, pointer: maxContainsPointer),
+          );
+        }
+
+        TypeRef? unevaluatedItemsType;
+        var disallowUnevaluatedItems = false;
+        final unevaluatedRaw = workingSchema['unevaluatedItems'];
+        final unevaluatedPointer =
+            _pointerChild(location.pointer, 'unevaluatedItems');
+        if (unevaluatedRaw is bool) {
+          if (!unevaluatedRaw) {
+            disallowUnevaluatedItems = true;
+          }
+        } else if (unevaluatedRaw is Map<String, dynamic>) {
+          unevaluatedItemsType = _resolveSchema(
+            unevaluatedRaw,
+            _SchemaLocation(uri: location.uri, pointer: unevaluatedPointer),
+            suggestedClassName: suggestedClassName != null
+                ? '${suggestedClassName}UnevaluatedItem'
+                : null,
+            dialect: activeDialect,
+          );
+        } else if (unevaluatedRaw != null) {
+          _schemaError(
+            'Expected "unevaluatedItems" to be a boolean or schema object',
+            _SchemaLocation(uri: location.uri, pointer: unevaluatedPointer),
+          );
+        }
+
+        final ref = ListTypeRef(
+          itemType: itemType,
+          prefixItemTypes: prefixItemTypes,
+          containsType: containsType,
+          minContains: minContains,
+          maxContains: maxContains,
+          unevaluatedItemsType: unevaluatedItemsType,
+          disallowUnevaluatedItems: disallowUnevaluatedItems,
+          allowAdditionalItems: allowAdditionalItems,
+          itemsEvaluatesAdditionalItems: itemsEvaluatesAdditionalItems,
         );
-        final ref = ListTypeRef(itemType);
         _typeCache[cacheKey] = ref;
         return ref;
       }
@@ -1297,6 +1454,14 @@ class _SchemaWalker {
     if (patternField != null) {
       spec.patternPropertiesField = patternField;
     }
+
+    _applyUnevaluatedProperties(
+      spec,
+      schema,
+      location,
+      dialect,
+      usedFieldNames,
+    );
   }
 
   String _allocateClassName(String candidate) {
@@ -1568,6 +1733,50 @@ class _SchemaWalker {
       fieldName: fieldName,
       valueType: valueType,
       matchers: matchers,
+    );
+  }
+
+  void _applyUnevaluatedProperties(
+    IrClass spec,
+    Map<String, dynamic> schema,
+    _SchemaLocation location,
+    SchemaDialect dialect,
+    Set<String> usedFieldNames,
+  ) {
+    final node = schema['unevaluatedProperties'];
+    if (node == null) {
+      return;
+    }
+
+    final pointer = _pointerChild(location.pointer, 'unevaluatedProperties');
+    if (node is bool) {
+      if (!node) {
+        spec.disallowUnevaluatedProperties = true;
+      }
+      return;
+    }
+    if (node is Map<String, dynamic>) {
+      final fieldName = _allocateDynamicFieldName(
+        usedFieldNames,
+        'unevaluatedProperties',
+      );
+      final typeRef = _resolveSchema(
+        node,
+        _SchemaLocation(uri: location.uri, pointer: pointer),
+        suggestedClassName: '${spec.name}UnevaluatedProperty',
+        dialect: dialect,
+      );
+      spec.unevaluatedPropertiesField = IrDynamicKeyField(
+        fieldName: fieldName,
+        valueType: typeRef,
+        description: node['description'] as String?,
+      );
+      return;
+    }
+
+    _schemaError(
+      'Expected "unevaluatedProperties" to be a boolean or schema object',
+      _SchemaLocation(uri: location.uri, pointer: pointer),
     );
   }
 

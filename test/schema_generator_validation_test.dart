@@ -58,7 +58,10 @@ void main() {
       expect(generated, contains("_throwValidationError(_ptr0"));
       expect(generated, contains("_appendJsonPointer(pointer, 'city')"));
       expect(generated, contains('class ValidationError implements Exception'));
-      expect(generated, contains("_appendJsonPointer(_ptr5, i_p5.toString())"));
+      expect(
+        generated,
+        contains("final itemPointer = _appendJsonPointer(_ptr5, i.toString());"),
+      );
       expect(generated, contains("_actualp4 != 'active'"));
     });
 

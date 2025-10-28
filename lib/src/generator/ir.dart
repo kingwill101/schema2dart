@@ -29,6 +29,8 @@ class IrClass {
     this.conditionals,
     this.superClassName,
     List<ConditionalConstraint> conditionalConstraints = const [],
+    this.unevaluatedPropertiesField,
+    this.disallowUnevaluatedProperties = false,
   }) : conditionalConstraints = List<ConditionalConstraint>.from(
          conditionalConstraints,
        );
@@ -42,6 +44,8 @@ class IrClass {
   final JsonConditionals? conditionals;
   String? superClassName;
   final List<ConditionalConstraint> conditionalConstraints;
+  IrDynamicKeyField? unevaluatedPropertiesField;
+  bool disallowUnevaluatedProperties;
 }
 
 /// Represents a property on an [IrClass].

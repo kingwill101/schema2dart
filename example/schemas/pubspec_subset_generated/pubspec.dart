@@ -7,35 +7,49 @@ import 'pubspec_publish_to.dart';
 
 /// A tiny subset of the pubspec.yaml structure to demonstrate generation.
 class Pubspec {
+  final PubspecEnvironment? environment;
   /// Package name.
   final String name;
-  final String? version;
-  final PubspecEnvironment? environment;
   /// Publish destination or 'none'.
   final PubspecPublishTo? publishTo;
+  final String? version;
 
   const Pubspec({
-    required this.name,
-    this.version,
     this.environment,
+    required this.name,
     this.publishTo,
+    this.version,
   });
 
   factory Pubspec.fromJson(Map<String, dynamic> json) {
+    final remaining = Map<String, dynamic>.from(json);
+    final environment = json['environment'] == null ? null : PubspecEnvironment.fromJson((json['environment'] as Map).cast<String, dynamic>());
+    remaining.remove('environment');
+    final name = json['name'] as String;
+    remaining.remove('name');
+    final publishTo = json['publish_to'] == null ? null : PubspecPublishToJson.fromJson(json['publish_to'] as String);
+    remaining.remove('publish_to');
+    final version = json['version'] as String?;
+    remaining.remove('version');
+    var unmatched = Map<String, dynamic>.from(remaining);
+    if (unmatched.isNotEmpty) {
+      final unexpected = unmatched.keys.join(', ');
+      throw ArgumentError('Unexpected additional properties: $unexpected');
+    }
     return Pubspec(
-      name: json['name'] as String,
-      version: json['version'] as String?,
-      environment: json['environment'] == null ? null : PubspecEnvironment.fromJson((json['environment'] as Map).cast<String, dynamic>()),
-      publishTo: json['publish_to'] == null ? null : PubspecPublishToJson.fromJson(json['publish_to'] as String),
+      environment: environment,
+      name: name,
+      publishTo: publishTo,
+      version: version,
     );
   }
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
-    map['name'] = name;
-    if (version != null) map['version'] = version;
     if (environment != null) map['environment'] = environment!.toJson();
+    map['name'] = name;
     if (publishTo != null) map['publish_to'] = publishTo!.toJson();
+    if (version != null) map['version'] = version;
     return map;
   }
 }

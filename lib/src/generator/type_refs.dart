@@ -124,9 +124,27 @@ class EnumTypeRef extends TypeRef {
 }
 
 class ListTypeRef extends TypeRef {
-  const ListTypeRef(this.itemType);
+  const ListTypeRef({
+    required this.itemType,
+    this.prefixItemTypes = const <TypeRef>[],
+    this.containsType,
+    this.minContains,
+    this.maxContains,
+    this.unevaluatedItemsType,
+    this.disallowUnevaluatedItems = false,
+    this.allowAdditionalItems = true,
+    this.itemsEvaluatesAdditionalItems = false,
+  });
 
   final TypeRef itemType;
+  final List<TypeRef> prefixItemTypes;
+  final TypeRef? containsType;
+  final int? minContains;
+  final int? maxContains;
+  final TypeRef? unevaluatedItemsType;
+  final bool disallowUnevaluatedItems;
+  final bool allowAdditionalItems;
+  final bool itemsEvaluatesAdditionalItems;
 
   @override
   String dartType({bool nullable = false}) {
@@ -163,7 +181,38 @@ class ListTypeRef extends TypeRef {
   bool get isList => true;
 
   @override
-  String get identity => 'list:${itemType.identity}';
+  String get identity {
+    final buffer = StringBuffer('list:${itemType.identity}');
+    if (prefixItemTypes.isNotEmpty) {
+      buffer.write(':prefix[');
+      buffer.write(
+        prefixItemTypes.map((type) => type.identity).join(','),
+      );
+      buffer.write(']');
+    }
+    if (containsType != null) {
+      buffer.write(':contains=${containsType!.identity}');
+    }
+    if (minContains != null) {
+      buffer.write(':minContains=$minContains');
+    }
+    if (maxContains != null) {
+      buffer.write(':maxContains=$maxContains');
+    }
+    if (unevaluatedItemsType != null) {
+      buffer.write(':unevaluated=${unevaluatedItemsType!.identity}');
+    }
+    if (disallowUnevaluatedItems) {
+      buffer.write(':disallowUnevaluated');
+    }
+    if (!allowAdditionalItems) {
+      buffer.write(':noAdditional');
+    }
+    if (itemsEvaluatesAdditionalItems) {
+      buffer.write(':itemsEvaluates');
+    }
+    return buffer.toString();
+  }
 }
 
 class FormatTypeRef extends TypeRef {
