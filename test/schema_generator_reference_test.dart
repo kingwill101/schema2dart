@@ -46,7 +46,7 @@ void main() {
     });
 
     test('collects definitions and conditional keywords', () {
-      final schemaFile = File('github-action.schema.json');
+      final schemaFile = File('example/schemas/github-action.schema.json');
       final schema =
           jsonDecode(schemaFile.readAsStringSync()) as Map<String, dynamic>;
       final generator = SchemaGenerator(
@@ -55,15 +55,15 @@ void main() {
 
       final ir = generator.buildIr(schema);
 
-      expect(ir.classes.map((c) => c.name), containsAll(<String>[
-        'RunsJavascript',
-        'RunsComposite',
-        'RootSchema',
-      ]));
+      expect(
+        ir.classes.map((c) => c.name),
+        containsAll(<String>['RunsJavascript', 'RunsComposite', 'RootSchema']),
+      );
 
       final rootClass = ir.rootClass;
-      final propertyNames =
-          rootClass.properties.map((property) => property.jsonName).toSet();
+      final propertyNames = rootClass.properties
+          .map((property) => property.jsonName)
+          .toSet();
       expect(propertyNames, containsAll(<String>['name', 'runs', 'inputs']));
     });
   });

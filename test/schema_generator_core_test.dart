@@ -82,6 +82,9 @@ class Pubspec {
     final version = json['version'] as String?;
     remaining.remove('version');
     var unmatched = Map<String, dynamic>.from(remaining);
+    if (unmatched.isNotEmpty) {
+      throw ArgumentError('Unexpected additional properties: \${unmatched.keys.join(', ')}');
+    }
     return Pubspec(
       environment: environment,
       name: name,
@@ -116,6 +119,9 @@ class PubspecEnvironment {
     final sdk = json['sdk'] as String?;
     remaining.remove('sdk');
     var unmatched = Map<String, dynamic>.from(remaining);
+    if (unmatched.isNotEmpty) {
+      throw ArgumentError('Unexpected additional properties: \${unmatched.keys.join(', ')}');
+    }
     return PubspecEnvironment(
       flutter: flutter,
       sdk: sdk,
@@ -204,6 +210,9 @@ class Pubspec {
     final version = json['version'] as String?;
     remaining.remove('version');
     var unmatched = Map<String, dynamic>.from(remaining);
+    if (unmatched.isNotEmpty) {
+      throw ArgumentError('Unexpected additional properties: \${unmatched.keys.join(', ')}');
+    }
     return Pubspec(
       environment: environment,
       name: name,
@@ -244,6 +253,9 @@ class PubspecEnvironment {
     final sdk = json['sdk'] as String?;
     remaining.remove('sdk');
     var unmatched = Map<String, dynamic>.from(remaining);
+    if (unmatched.isNotEmpty) {
+      throw ArgumentError('Unexpected additional properties: \${unmatched.keys.join(', ')}');
+    }
     return PubspecEnvironment(
       flutter: flutter,
       sdk: sdk,

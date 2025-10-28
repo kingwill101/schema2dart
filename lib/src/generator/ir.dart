@@ -28,7 +28,10 @@ class IrClass {
     this.allowAdditionalProperties = true,
     this.conditionals,
     this.superClassName,
-  });
+    List<ConditionalConstraint> conditionalConstraints = const [],
+  }) : conditionalConstraints = List<ConditionalConstraint>.from(
+         conditionalConstraints,
+       );
 
   final String name;
   final String? description;
@@ -38,6 +41,7 @@ class IrClass {
   IrPatternPropertyField? patternPropertiesField;
   final JsonConditionals? conditionals;
   String? superClassName;
+  final List<ConditionalConstraint> conditionalConstraints;
 }
 
 /// Represents a property on an [IrClass].
@@ -195,6 +199,28 @@ class IrPatternMatcher {
 
   final String pattern;
   final TypeRef typeRef;
+}
+
+class ConditionalConstraint {
+  ConditionalConstraint({
+    required this.keyword,
+    required this.schemaPointer,
+    required List<ConstraintBranch> branches,
+  }) : branches = List<ConstraintBranch>.unmodifiable(branches);
+
+  final String keyword;
+  final String schemaPointer;
+  final List<ConstraintBranch> branches;
+}
+
+class ConstraintBranch {
+  ConstraintBranch({
+    required this.schemaPointer,
+    required Set<String> requiredProperties,
+  }) : requiredProperties = Set.unmodifiable(requiredProperties);
+
+  final String schemaPointer;
+  final Set<String> requiredProperties;
 }
 
 class JsonConditionals {

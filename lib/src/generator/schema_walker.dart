@@ -145,6 +145,8 @@ class _SchemaWalker {
     _SchemaLocation location, {
     String? suggestedClassName,
   }) {
+    final pendingConstraints = <ConditionalConstraint>[];
+
     final cacheKey = _SchemaCacheKey(location.uri, location.pointer);
     final cached = _typeCache[cacheKey];
     if (cached != null) {
@@ -231,16 +233,58 @@ class _SchemaWalker {
     if (unionKeyword != null) {
       final members = schema[unionKeyword];
       if (members is List && members.isNotEmpty) {
-        final ref = _resolveUnion(
-          schema,
+        final constraintBranches = _extractConstraintOnlyUnion(
           location,
           members.cast<dynamic>(),
           unionKeyword,
-          suggestedClassName: suggestedClassName,
         );
-        _typeCache[cacheKey] = ref;
-        return ref;
+        if (constraintBranches != null && constraintBranches.isNotEmpty) {
+          final unionPointer = _pointerChild(location.pointer, unionKeyword);
+          pendingConstraints.add(
+            ConditionalConstraint(
+              keyword: unionKeyword,
+              schemaPointer: unionPointer,
+              branches: constraintBranches,
+            ),
+          );
+        } else {
+          final ref = _resolveUnion(
+            schema,
+            location,
+            members.cast<dynamic>(),
+            unionKeyword,
+            suggestedClassName: suggestedClassName,
+          );
+          _typeCache[cacheKey] = ref;
+          return ref;
+        }
       }
+    }
+
+    final constValue = workingSchema['const'];
+    if (constValue is String) {
+      const ref = PrimitiveTypeRef('String');
+      _typeCache[cacheKey] = ref;
+      return ref;
+    }
+    if (constValue is num) {
+      final ref = constValue is int
+          ? const PrimitiveTypeRef('int')
+          : const PrimitiveTypeRef('double');
+      _typeCache[cacheKey] = ref;
+      return ref;
+    }
+    if (constValue is bool) {
+      const ref = PrimitiveTypeRef('bool');
+      _typeCache[cacheKey] = ref;
+      return ref;
+    }
+    if (workingSchema.containsKey('const') &&
+        constValue == null &&
+        workingSchema['type'] == 'null') {
+      const ref = DynamicTypeRef();
+      _typeCache[cacheKey] = ref;
+      return ref;
     }
 
     final type = workingSchema['type'];
@@ -267,10 +311,30 @@ class _SchemaWalker {
         _classByLocation[locationKey] = objSpec;
         _typeCache[cacheKey] = ObjectTypeRef(objSpec);
         _populateObjectSpec(objSpec, workingSchema, location);
+        if (pendingConstraints.isNotEmpty) {
+          final existingPointers = objSpec.conditionalConstraints
+              .map((constraint) => constraint.schemaPointer)
+              .toSet();
+          for (final constraint in pendingConstraints) {
+            if (existingPointers.add(constraint.schemaPointer)) {
+              objSpec.conditionalConstraints.add(constraint);
+            }
+          }
+        }
         return objSpec;
       });
 
       final ref = ObjectTypeRef(spec);
+      if (pendingConstraints.isNotEmpty) {
+        final existingPointers = spec.conditionalConstraints
+            .map((c) => c.schemaPointer)
+            .toSet();
+        for (final constraint in pendingConstraints) {
+          if (existingPointers.add(constraint.schemaPointer)) {
+            spec.conditionalConstraints.add(constraint);
+          }
+        }
+      }
       _typeCache[cacheKey] = ref;
       return ref;
     }
@@ -820,6 +884,57 @@ class _SchemaWalker {
       default:
         return const DynamicTypeRef();
     }
+  }
+
+  List<ConstraintBranch>? _extractConstraintOnlyUnion(
+    _SchemaLocation location,
+    List<dynamic> members,
+    String keyword,
+  ) {
+    final pointer = _pointerChild(location.pointer, keyword);
+    final branches = <ConstraintBranch>[];
+    for (var index = 0; index < members.length; index++) {
+      final entry = members[index];
+      if (entry is! Map<String, dynamic>) {
+        return null;
+      }
+      if (!_isConstraintOnlySchema(entry)) {
+        return null;
+      }
+      final required = _requiredPropertiesFromSchema(entry);
+      if (required.isEmpty) {
+        return null;
+      }
+      final branchPointer = _pointerChild(pointer, '$index');
+      branches.add(
+        ConstraintBranch(
+          schemaPointer: branchPointer,
+          requiredProperties: required,
+        ),
+      );
+    }
+    return branches;
+  }
+
+  bool _isConstraintOnlySchema(Map<String, dynamic> schema) {
+    const metadataKeys = <String>{
+      'description',
+      'title',
+      r'$comment',
+      'default',
+      'deprecated',
+      'examples',
+    };
+    for (final key in schema.keys) {
+      if (key == 'required') {
+        continue;
+      }
+      if (metadataKeys.contains(key)) {
+        continue;
+      }
+      return false;
+    }
+    return true;
   }
 
   Set<String> _requiredPropertiesFromSchema(Map<String, dynamic>? schema) {

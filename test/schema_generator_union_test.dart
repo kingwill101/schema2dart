@@ -145,7 +145,7 @@ sealed class Step {
 
 class Run extends Step {
   final String run;
-  final dynamic type;
+  final String type;
 
   const Run({
     required this.run,
@@ -156,9 +156,8 @@ class Run extends Step {
     final remaining = Map<String, dynamic>.from(json);
     final run = json['run'] as String;
     remaining.remove('run');
-    final type = json['type'];
+    final type = json['type'] as String;
     remaining.remove('type');
-    var unmatched = Map<String, dynamic>.from(remaining);
     return Run(
       run: run,
       type: type,
@@ -176,7 +175,7 @@ class Run extends Step {
 }
 
 class Uses extends Step {
-  final dynamic type;
+  final String type;
   final String uses;
 
   const Uses({
@@ -186,11 +185,10 @@ class Uses extends Step {
 
   factory Uses.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
-    final type = json['type'];
+    final type = json['type'] as String;
     remaining.remove('type');
     final uses = json['uses'] as String;
     remaining.remove('uses');
-    var unmatched = Map<String, dynamic>.from(remaining);
     return Uses(
       type: type,
       uses: uses,

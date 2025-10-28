@@ -807,16 +807,28 @@ class _SchemaEmitter {
     buffer.writeln(
       '  factory ${klass.name}.fromJson(Map<String, dynamic> json) {',
     );
-    buffer.writeln('    final remaining = Map<String, dynamic>.from(json);');
+    final patternField = klass.patternPropertiesField;
+    final additionalField = klass.additionalPropertiesField;
+    final needsUnmatched =
+        patternField != null ||
+        additionalField != null ||
+        !klass.allowAdditionalProperties;
+    final needsRemaining = klass.properties.isNotEmpty || needsUnmatched;
+    if (needsRemaining) {
+      buffer.writeln('    final remaining = Map<String, dynamic>.from(json);');
+    }
     for (final property in klass.properties) {
       buffer.writeln(
         '    final ${property.fieldName} = ${property.deserializeExpression('json')};',
       );
       buffer.writeln("    remaining.remove('${property.jsonName}');");
     }
-    buffer.writeln('    var unmatched = Map<String, dynamic>.from(remaining);');
+    if (needsUnmatched) {
+      buffer.writeln(
+        '    var unmatched = Map<String, dynamic>.from(remaining);',
+      );
+    }
 
-    final patternField = klass.patternPropertiesField;
     if (patternField != null) {
       final valueType = patternField.valueType.dartType();
       buffer.writeln(
@@ -859,7 +871,6 @@ class _SchemaEmitter {
       buffer.writeln('    }');
     }
 
-    final additionalField = klass.additionalPropertiesField;
     if (additionalField != null) {
       final valueType = additionalField.valueType.dartType();
       buffer.writeln(
@@ -1081,6 +1092,17 @@ class _SchemaEmitter {
       buffer.writeln('    }');
     }
 
+    for (var index = 0; index < klass.conditionalConstraints.length; index++) {
+      final constraint = klass.conditionalConstraints[index];
+      _writeConditionalConstraintValidation(
+        buffer,
+        klass,
+        constraint,
+        indent: '    ',
+        index: index,
+      );
+    }
+
     buffer.writeln('  }');
   }
 
@@ -1223,6 +1245,80 @@ class _SchemaEmitter {
     }
   }
 
+  void _writeConditionalConstraintValidation(
+    StringBuffer buffer,
+    IrClass klass,
+    ConditionalConstraint constraint, {
+    required String indent,
+    required int index,
+  }) {
+    if (constraint.branches.isEmpty) {
+      return;
+    }
+
+    final branchVarNames = <String>[];
+    for (
+      var branchIndex = 0;
+      branchIndex < constraint.branches.length;
+      branchIndex++
+    ) {
+      final branch = constraint.branches[branchIndex];
+      final sortedProperties = branch.requiredProperties.toList()..sort();
+      final checks = <String>[];
+      for (final jsonName in sortedProperties) {
+        final property = klass.properties.firstWhere(
+          (prop) => prop.jsonName == jsonName,
+          orElse: () => throw StateError(
+            'Required property $jsonName not found on ${klass.name}',
+          ),
+        );
+        if (property.isRequired) {
+          continue;
+        }
+        checks.add('${property.fieldName} != null');
+      }
+      final expression = checks.isEmpty ? 'true' : checks.join(' && ');
+      final branchVar = '_constraint${index}Match$branchIndex';
+      buffer.writeln('$indent final $branchVar = $expression;');
+      branchVarNames.add(branchVar);
+    }
+
+    final combinationsDescription = constraint.branches
+        .map((branch) {
+          final props = branch.requiredProperties.toList()..sort();
+          final joined = props.map((name) => '"$name"').join(', ');
+          return '[$joined]';
+        })
+        .join(', ');
+
+    final matchesVar = '_constraint${index}Matches';
+    buffer.writeln(
+      '$indent final $matchesVar = <bool>[${branchVarNames.join(', ')}];',
+    );
+
+    if (constraint.keyword == 'oneOf') {
+      final countVar = '_constraint${index}MatchCount';
+      buffer.writeln(
+        '$indent final $countVar = $matchesVar.where((value) => value).length;',
+      );
+      final message =
+          'Expected exactly one of the combinations defined at ${constraint.schemaPointer} to be satisfied ($combinationsDescription).';
+      buffer.writeln('$indent if ($countVar != 1) {');
+      buffer.writeln(
+        '$indent   _throwValidationError(pointer, ${_stringLiteral(constraint.keyword)}, ${_stringLiteral(message)});',
+      );
+      buffer.writeln('$indent }');
+    } else {
+      final message =
+          'Expected at least one of the combinations defined at ${constraint.schemaPointer} to be satisfied ($combinationsDescription).';
+      buffer.writeln('$indent if (!$matchesVar.any((value) => value)) {');
+      buffer.writeln(
+        '$indent   _throwValidationError(pointer, ${_stringLiteral(constraint.keyword)}, ${_stringLiteral(message)});',
+      );
+      buffer.writeln('$indent }');
+    }
+  }
+
   bool _isStringLike(TypeRef ref) {
     return ref is PrimitiveTypeRef && ref.typeName == 'String';
   }
@@ -1258,6 +1354,10 @@ class _SchemaEmitter {
 bool _classNeedsValidation(IrClass klass, SchemaGeneratorOptions options) {
   if (!options.emitValidationHelpers) {
     return false;
+  }
+
+  if (klass.conditionalConstraints.isNotEmpty) {
+    return true;
   }
 
   for (final property in klass.properties) {
