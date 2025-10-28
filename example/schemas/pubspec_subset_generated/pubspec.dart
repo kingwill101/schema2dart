@@ -31,11 +31,6 @@ class Pubspec {
     remaining.remove('publish_to');
     final version = json['version'] as String?;
     remaining.remove('version');
-    var unmatched = Map<String, dynamic>.from(remaining);
-    if (unmatched.isNotEmpty) {
-      final unexpected = unmatched.keys.join(', ');
-      throw ArgumentError('Unexpected additional properties: $unexpected');
-    }
     return Pubspec(
       environment: environment,
       name: name,

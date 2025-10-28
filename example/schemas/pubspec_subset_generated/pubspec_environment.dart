@@ -17,11 +17,6 @@ class PubspecEnvironment {
     remaining.remove('flutter');
     final sdk = json['sdk'] as String?;
     remaining.remove('sdk');
-    var unmatched = Map<String, dynamic>.from(remaining);
-    if (unmatched.isNotEmpty) {
-      final unexpected = unmatched.keys.join(', ');
-      throw ArgumentError('Unexpected additional properties: $unexpected');
-    }
     return PubspecEnvironment(
       flutter: flutter,
       sdk: sdk,
