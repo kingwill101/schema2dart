@@ -1350,23 +1350,21 @@ class _SchemaEmitter {
     if (ref is ListTypeRef) {
       final lengthVar = '_len$suffix';
       final evaluatedVar = '_evaluated$suffix';
-      buffer.writeln(
-        '${indent}final $lengthVar = $valueExpression.length;',
-      );
+      buffer.writeln('${indent}final $lengthVar = $valueExpression.length;');
       buffer.writeln(
         '${indent}final $evaluatedVar = List<bool>.filled($lengthVar, false);',
       );
 
       for (var index = 0; index < ref.prefixItemTypes.length; index++) {
         final prefixType = ref.prefixItemTypes[index];
-        buffer.writeln('$indent'
-            'if ($lengthVar > $index) {');
+        buffer.writeln(
+          '$indent'
+          'if ($lengthVar > $index) {',
+        );
         buffer.writeln(
           "$indent  final itemPointer = _appendJsonPointer($pointerExpression, '$index');",
         );
-        buffer.writeln(
-          '$indent  final item = $valueExpression[$index];',
-        );
+        buffer.writeln('$indent  final item = $valueExpression[$index];');
         _writeNestedValidation(
           buffer,
           prefixType,
@@ -1415,23 +1413,70 @@ class _SchemaEmitter {
         buffer.writeln('$indent}');
       }
 
-      if (ref.unevaluatedItemsType != null ||
-          ref.disallowUnevaluatedItems) {
+      if (ref.containsType != null) {
+        final containsType = ref.containsType!;
+        final containsCountVar = '_containsCount$suffix';
+        final minContains =
+            ref.minContains ?? (ref.containsType != null ? 1 : null);
+        final maxContains = ref.maxContains;
+        buffer.writeln('${indent}var $containsCountVar = 0;');
+        buffer.writeln('${indent}for (var i = 0; i < $lengthVar; i++) {');
+        buffer.writeln(
+          '${indent}  final itemPointer = _appendJsonPointer($pointerExpression, i.toString());',
+        );
+        buffer.writeln('${indent}  final item = $valueExpression[i];');
+        if (containsType is ObjectTypeRef &&
+            _classNeedsValidation(containsType.spec, options)) {
+          final klass = containsType.spec;
+          buffer.writeln('${indent}  var matches = item is ${klass.name};');
+          buffer.writeln('${indent}  if (matches) {');
+          buffer.writeln('${indent}    try {');
+          buffer.writeln(
+            '${indent}      (item as ${klass.name}).validate(pointer: itemPointer);',
+          );
+          buffer.writeln('${indent}    } on ValidationError {');
+          buffer.writeln('${indent}      matches = false;');
+          buffer.writeln('${indent}    }');
+          buffer.writeln('${indent}  }');
+        } else {
+          final matchCondition = _containsMatchCondition(containsType, 'item');
+          buffer.writeln('${indent}  final matches = $matchCondition;');
+        }
+        buffer.writeln('${indent}  if (matches) {');
+        buffer.writeln('${indent}    $containsCountVar++;');
+        buffer.writeln(
+          '${indent}    if (!$evaluatedVar[i]) { $evaluatedVar[i] = true; }',
+        );
+        buffer.writeln('${indent}  }');
+        buffer.writeln('${indent}}');
+        if (minContains != null) {
+          buffer.writeln('${indent}if ($containsCountVar < $minContains) {');
+          buffer.writeln(
+            '$indent  _throwValidationError($pointerExpression, "contains", "Expected at least $minContains item(s) matching \\"contains\\" but found " + $containsCountVar.toString() + ".");',
+          );
+          buffer.writeln('${indent}}');
+        }
+        if (maxContains != null) {
+          buffer.writeln('${indent}if ($containsCountVar > $maxContains) {');
+          buffer.writeln(
+            '$indent  _throwValidationError($pointerExpression, "contains", "Expected at most $maxContains item(s) matching \\"contains\\" but found " + $containsCountVar.toString() + ".");',
+          );
+          buffer.writeln('${indent}}');
+        }
+      }
+
+      if (ref.unevaluatedItemsType != null || ref.disallowUnevaluatedItems) {
         buffer.writeln(
           '$indent'
           'for (var i = 0; i < $lengthVar; i++) {',
         );
-        buffer.writeln(
-          '$indent  if (!$evaluatedVar[i]) {',
-        );
+        buffer.writeln('$indent  if (!$evaluatedVar[i]) {');
         final unevaluatedType = ref.unevaluatedItemsType;
         if (unevaluatedType != null) {
           buffer.writeln(
             '$indent    final itemPointer = _appendJsonPointer($pointerExpression, i.toString());',
           );
-          buffer.writeln(
-            '$indent    final item = $valueExpression[i];',
-          );
+          buffer.writeln('$indent    final item = $valueExpression[i];');
           _writeNestedValidation(
             buffer,
             unevaluatedType,
@@ -1439,7 +1484,7 @@ class _SchemaEmitter {
             'itemPointer',
             '$indent    ',
             '$suffix'
-            'u',
+                'u',
           );
           buffer.writeln('$indent    $evaluatedVar[i] = true;');
           if (ref.disallowUnevaluatedItems) {
@@ -1617,7 +1662,11 @@ bool _typeRequiresValidation(TypeRef ref) {
       }
     }
     final containsType = ref.containsType;
-    if (containsType != null && _typeRequiresValidation(containsType)) {
+    if (containsType != null &&
+        _typeRequiresValidation(containsType)) {
+      return true;
+    }
+    if (containsType != null) {
       return true;
     }
     final unevaluatedItemsType = ref.unevaluatedItemsType;
@@ -1628,6 +1677,32 @@ bool _typeRequiresValidation(TypeRef ref) {
     return false;
   }
   return false;
+}
+
+String _containsMatchCondition(TypeRef ref, String valueExpression) {
+  if (ref is PrimitiveTypeRef) {
+    final typeName = ref.typeName;
+    if (typeName == 'dynamic') {
+      return 'true';
+    }
+    return '$valueExpression is $typeName';
+  }
+  if (ref is EnumTypeRef) {
+    return '$valueExpression is ${ref.spec.name}';
+  }
+  if (ref is FormatTypeRef) {
+    return '$valueExpression is ${ref.typeName}';
+  }
+  if (ref is ListTypeRef) {
+    return '$valueExpression is List';
+  }
+  if (ref is ObjectTypeRef) {
+    return '$valueExpression is ${ref.spec.name}';
+  }
+  if (ref is DynamicTypeRef) {
+    return 'true';
+  }
+  return 'true';
 }
 
 class _UnionVariantView {

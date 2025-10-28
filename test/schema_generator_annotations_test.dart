@@ -31,10 +31,7 @@ void main() {
         generated,
         contains('final Map<String, int>? ${field.fieldName};'),
       );
-      expect(
-        generated,
-        contains('Map<String, int>? ${field.fieldName}Value;'),
-      );
+      expect(generated, contains('Map<String, int>? ${field.fieldName}Value;'));
     });
 
     test('sets disallow flag when keyword is false', () {
@@ -95,6 +92,36 @@ void main() {
       expect(list.disallowUnevaluatedItems, isFalse);
 
       generator.generate(schema);
+    });
+  });
+
+  group('contains', () {
+    test('enforces min and max matches', () {
+      const schema = <String, dynamic>{
+        'type': 'object',
+        'properties': {
+          'values': {
+            'type': 'array',
+            'contains': {'type': 'string'},
+            'minContains': 2,
+            'maxContains': 3,
+          },
+        },
+      };
+
+      final generator = SchemaGenerator(
+        options: const SchemaGeneratorOptions(emitValidationHelpers: true),
+      );
+      final generated = generator.generate(schema);
+
+      expect(
+        generated,
+        contains('Expected at least 2 item(s) matching \\"contains\\"'),
+      );
+      expect(
+        generated,
+        contains('Expected at most 3 item(s) matching \\"contains\\"'),
+      );
     });
   });
 }
