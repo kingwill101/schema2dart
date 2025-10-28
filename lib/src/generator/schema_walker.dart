@@ -49,6 +49,7 @@ class _SchemaWalker {
     required Uri baseUri,
     required SchemaDocumentLoader documentLoader,
   }) : _typeCache = {},
+       _inProgress = <_SchemaCacheKey>{},
        _classes = LinkedHashMap<String, IrClass>(),
        _enums = LinkedHashMap<String, IrEnum>(),
        _unions = <IrUnion>[],
@@ -59,11 +60,16 @@ class _SchemaWalker {
        _helpers = LinkedHashMap<String, IrHelper>(),
        _rootUri = baseUri,
        _documentLoader = documentLoader,
-       _documentCache = {baseUri: _rootSchema};
+       _documentCache = {baseUri: _rootSchema},
+       _documentDialects = <Uri, SchemaDialect>{} {
+    final rootDialect = _detectDocumentDialect(baseUri, _rootSchema);
+    _documentDialects[baseUri] = rootDialect;
+  }
 
   final Map<String, dynamic> _rootSchema;
   final SchemaGeneratorOptions _options;
   final Map<_SchemaCacheKey, TypeRef> _typeCache;
+  final Set<_SchemaCacheKey> _inProgress;
   final LinkedHashMap<String, IrClass> _classes;
   final LinkedHashMap<String, IrEnum> _enums;
   final List<IrUnion> _unions;
@@ -75,11 +81,13 @@ class _SchemaWalker {
   final Uri _rootUri;
   final SchemaDocumentLoader _documentLoader;
   final Map<Uri, Map<String, dynamic>> _documentCache;
+  final Map<Uri, SchemaDialect> _documentDialects;
 
   SchemaIr build() {
     final rootLocation = _SchemaLocation(uri: _rootUri, pointer: '#');
-    final root = _ensureRootClass(rootLocation);
-    _processDefinitions(_rootSchema, rootLocation);
+    final rootDialect = _documentDialect(_rootUri);
+    final root = _ensureRootClass(rootLocation, rootDialect);
+    _processDefinitions(_rootSchema, rootLocation, rootDialect);
     final classes = _orderedClasses(root);
     final enums = _enums.values.toList(growable: false);
     if (_options.emitValidationHelpers) {
@@ -94,11 +102,12 @@ class _SchemaWalker {
     );
   }
 
-  IrClass _ensureRootClass(_SchemaLocation location) {
+  IrClass _ensureRootClass(_SchemaLocation location, SchemaDialect dialect) {
     final ref = _resolveSchema(
       _rootSchema,
       location,
       suggestedClassName: _options.effectiveRootClassName,
+      dialect: dialect,
     );
 
     if (ref is ObjectTypeRef) {
@@ -144,9 +153,8 @@ class _SchemaWalker {
     Map<String, dynamic>? schema,
     _SchemaLocation location, {
     String? suggestedClassName,
+    SchemaDialect? dialect,
   }) {
-    final pendingConstraints = <ConditionalConstraint>[];
-
     final cacheKey = _SchemaCacheKey(location.uri, location.pointer);
     final cached = _typeCache[cacheKey];
     if (cached != null) {
@@ -173,209 +181,237 @@ class _SchemaWalker {
       return ref;
     }
 
-    if (schema case {'\$ref': final String refValue}) {
-      final resolved = _resolveReference(refValue, location);
-      final inferredName = _nameFromPointer(resolved.location.pointer);
-      final typeRef = _resolveSchema(
-        resolved.schema,
-        resolved.location,
-        suggestedClassName: suggestedClassName ?? inferredName,
-      );
-      _typeCache[cacheKey] = typeRef;
-      return typeRef;
-    }
+    final inheritedDialect = dialect ?? _documentDialect(location.uri);
 
-    Map<String, dynamic> workingSchema = schema;
-    if (workingSchema case {'allOf': final List allOf} when allOf.isNotEmpty) {
-      workingSchema = _mergeAllOfSchemas(workingSchema, location);
-    }
-
-    _processDefinitions(workingSchema, location);
-
-    final enumValues = workingSchema['enum'];
-    if (enumValues is List &&
-        enumValues.isNotEmpty &&
-        enumValues.every((value) => value is String)) {
-      final enumName = _allocateEnumName(
-        workingSchema['title'] as String? ??
-            suggestedClassName ??
-            _nameFromPointer(location.pointer),
-      );
-      final description = workingSchema['description'] as String?;
-      final spec = _enums.putIfAbsent(
-        enumName,
-        () => IrEnum(
-          name: enumName,
-          description: description,
-          values: enumValues.mapIndexed((index, value) {
-            final identifier = _Naming.enumValue(
-              value as String? ?? 'value$index',
-            );
-            return IrEnumValue(
-              identifier: identifier,
-              jsonValue: value as String,
-            );
-          }).toList(),
-        ),
-      );
-      _enumByLocation[cacheKey] = spec;
-
-      final ref = EnumTypeRef(spec);
+    if (_inProgress.contains(cacheKey)) {
+      const ref = DynamicTypeRef();
       _typeCache[cacheKey] = ref;
       return ref;
     }
+    _inProgress.add(cacheKey);
 
-    final unionKeyword = schema.containsKey('oneOf')
-        ? 'oneOf'
-        : schema.containsKey('anyOf')
-        ? 'anyOf'
-        : null;
-    if (unionKeyword != null) {
-      final members = schema[unionKeyword];
-      if (members is List && members.isNotEmpty) {
-        final constraintBranches = _extractConstraintOnlyUnion(
-          location,
-          members.cast<dynamic>(),
-          unionKeyword,
+    final pendingConstraints = <ConditionalConstraint>[];
+
+    try {
+      Map<String, dynamic> workingSchema = schema;
+      final activeDialect = _dialectForSchema(
+        workingSchema,
+        location,
+        inheritedDialect,
+      );
+
+      if (workingSchema case {'\$ref': final String refValue}) {
+        final resolved = _resolveReference(refValue, location);
+        final inferredName = _nameFromPointer(resolved.location.pointer);
+        final refDialect = _documentDialect(resolved.location.uri);
+        final typeRef = _resolveSchema(
+          resolved.schema,
+          resolved.location,
+          suggestedClassName: suggestedClassName ?? inferredName,
+          dialect: refDialect,
         );
-        if (constraintBranches != null && constraintBranches.isNotEmpty) {
-          final unionPointer = _pointerChild(location.pointer, unionKeyword);
-          pendingConstraints.add(
-            ConditionalConstraint(
-              keyword: unionKeyword,
-              schemaPointer: unionPointer,
-              branches: constraintBranches,
-            ),
-          );
-        } else {
-          final ref = _resolveUnion(
-            schema,
+        _typeCache[cacheKey] = typeRef;
+        return typeRef;
+      }
+
+      if (workingSchema case {
+        'allOf': final List allOf,
+      } when allOf.isNotEmpty) {
+        workingSchema = _mergeAllOfSchemas(workingSchema, location);
+      }
+
+      _processDefinitions(workingSchema, location, activeDialect);
+
+      final enumValues = workingSchema['enum'];
+      if (enumValues is List &&
+          enumValues.isNotEmpty &&
+          enumValues.every((value) => value is String)) {
+        final enumName = _allocateEnumName(
+          workingSchema['title'] as String? ??
+              suggestedClassName ??
+              _nameFromPointer(location.pointer),
+        );
+        final description = workingSchema['description'] as String?;
+        final spec = _enums.putIfAbsent(
+          enumName,
+          () => IrEnum(
+            name: enumName,
+            description: description,
+            values: enumValues.mapIndexed((index, value) {
+              final identifier = _Naming.enumValue(
+                value as String? ?? 'value$index',
+              );
+              return IrEnumValue(
+                identifier: identifier,
+                jsonValue: value as String,
+              );
+            }).toList(),
+          ),
+        );
+        _enumByLocation[cacheKey] = spec;
+
+        final ref = EnumTypeRef(spec);
+        _typeCache[cacheKey] = ref;
+        return ref;
+      }
+
+      final unionKeyword = workingSchema.containsKey('oneOf')
+          ? 'oneOf'
+          : workingSchema.containsKey('anyOf')
+          ? 'anyOf'
+          : null;
+      if (unionKeyword != null) {
+        final members = workingSchema[unionKeyword];
+        if (members is List && members.isNotEmpty) {
+          final constraintBranches = _extractConstraintOnlyUnion(
             location,
             members.cast<dynamic>(),
             unionKeyword,
-            suggestedClassName: suggestedClassName,
+          );
+          if (constraintBranches != null && constraintBranches.isNotEmpty) {
+            final unionPointer = _pointerChild(location.pointer, unionKeyword);
+            pendingConstraints.add(
+              ConditionalConstraint(
+                keyword: unionKeyword,
+                schemaPointer: unionPointer,
+                branches: constraintBranches,
+              ),
+            );
+          } else {
+            final ref = _resolveUnion(
+              workingSchema,
+              location,
+              members.cast<dynamic>(),
+              unionKeyword,
+              suggestedClassName: suggestedClassName,
+              dialect: activeDialect,
+            );
+            _typeCache[cacheKey] = ref;
+            return ref;
+          }
+        }
+      }
+
+      final constValue = workingSchema['const'];
+      if (constValue is String) {
+        const ref = PrimitiveTypeRef('String');
+        _typeCache[cacheKey] = ref;
+        return ref;
+      }
+      if (constValue is num) {
+        final ref = constValue is int
+            ? const PrimitiveTypeRef('int')
+            : const PrimitiveTypeRef('double');
+        _typeCache[cacheKey] = ref;
+        return ref;
+      }
+      if (constValue is bool) {
+        const ref = PrimitiveTypeRef('bool');
+        _typeCache[cacheKey] = ref;
+        return ref;
+      }
+      if (workingSchema.containsKey('const') &&
+          constValue == null &&
+          workingSchema['type'] == 'null') {
+        const ref = DynamicTypeRef();
+        _typeCache[cacheKey] = ref;
+        return ref;
+      }
+
+      final type = workingSchema['type'];
+      final normalizedType = _normalizeTypeKeyword(type);
+
+      if (normalizedType == 'object' ||
+          workingSchema.containsKey('properties')) {
+        final className = _allocateClassName(
+          workingSchema['title'] as String? ??
+              suggestedClassName ??
+              _nameFromPointer(location.pointer),
+        );
+        final spec = _classes.putIfAbsent(className, () {
+          final objSpec = IrClass(
+            name: className,
+            description: workingSchema['description'] as String?,
+            properties: [],
+            conditionals: JsonConditionals(
+              ifSchema: workingSchema['if'] as Map<String, dynamic>?,
+              thenSchema: workingSchema['then'] as Map<String, dynamic>?,
+              elseSchema: workingSchema['else'] as Map<String, dynamic>?,
+            ),
+          );
+          final locationKey = _SchemaCacheKey(location.uri, location.pointer);
+          _classByLocation[locationKey] = objSpec;
+          _typeCache[cacheKey] = ObjectTypeRef(objSpec);
+          _populateObjectSpec(objSpec, workingSchema, location, activeDialect);
+          if (pendingConstraints.isNotEmpty) {
+            final existingPointers = objSpec.conditionalConstraints
+                .map((constraint) => constraint.schemaPointer)
+                .toSet();
+            for (final constraint in pendingConstraints) {
+              if (existingPointers.add(constraint.schemaPointer)) {
+                objSpec.conditionalConstraints.add(constraint);
+              }
+            }
+          }
+          return objSpec;
+        });
+
+        final ref = ObjectTypeRef(spec);
+        if (pendingConstraints.isNotEmpty) {
+          final existingPointers = spec.conditionalConstraints
+              .map((c) => c.schemaPointer)
+              .toSet();
+          for (final constraint in pendingConstraints) {
+            if (existingPointers.add(constraint.schemaPointer)) {
+              spec.conditionalConstraints.add(constraint);
+            }
+          }
+        }
+        _typeCache[cacheKey] = ref;
+        return ref;
+      }
+
+      if (normalizedType == 'string') {
+        final format = workingSchema['format'] as String?;
+        final hint = _lookupFormatHint(format);
+        if (hint != null && _options.enableFormatHints) {
+          if (hint.helper != null) {
+            _helpers.putIfAbsent(hint.helper!.name, () => hint.helper!);
+          }
+          final ref = FormatTypeRef(
+            format: hint.name,
+            typeName: hint.typeName,
+            deserialize: hint.deserialize,
+            serialize: hint.serialize,
+            helperTypeName: hint.helper?.name,
           );
           _typeCache[cacheKey] = ref;
           return ref;
         }
       }
-    }
 
-    final constValue = workingSchema['const'];
-    if (constValue is String) {
-      const ref = PrimitiveTypeRef('String');
-      _typeCache[cacheKey] = ref;
-      return ref;
-    }
-    if (constValue is num) {
-      final ref = constValue is int
-          ? const PrimitiveTypeRef('int')
-          : const PrimitiveTypeRef('double');
-      _typeCache[cacheKey] = ref;
-      return ref;
-    }
-    if (constValue is bool) {
-      const ref = PrimitiveTypeRef('bool');
-      _typeCache[cacheKey] = ref;
-      return ref;
-    }
-    if (workingSchema.containsKey('const') &&
-        constValue == null &&
-        workingSchema['type'] == 'null') {
-      const ref = DynamicTypeRef();
-      _typeCache[cacheKey] = ref;
-      return ref;
-    }
-
-    final type = workingSchema['type'];
-    final normalizedType = _normalizeTypeKeyword(type);
-
-    if (normalizedType == 'object' || workingSchema.containsKey('properties')) {
-      final className = _allocateClassName(
-        workingSchema['title'] as String? ??
-            suggestedClassName ??
-            _nameFromPointer(location.pointer),
-      );
-      final spec = _classes.putIfAbsent(className, () {
-        final objSpec = IrClass(
-          name: className,
-          description: workingSchema['description'] as String?,
-          properties: [],
-          conditionals: JsonConditionals(
-            ifSchema: schema['if'] as Map<String, dynamic>?,
-            thenSchema: schema['then'] as Map<String, dynamic>?,
-            elseSchema: schema['else'] as Map<String, dynamic>?,
-          ),
+      if (normalizedType == 'array') {
+        final items = workingSchema['items'];
+        final itemPointer = _pointerChild(location.pointer, 'items');
+        final itemType = _resolveSchema(
+          items is Map<String, dynamic> ? items : null,
+          _SchemaLocation(uri: location.uri, pointer: itemPointer),
+          suggestedClassName: suggestedClassName != null
+              ? '${suggestedClassName}Item'
+              : null,
+          dialect: activeDialect,
         );
-        final locationKey = _SchemaCacheKey(location.uri, location.pointer);
-        _classByLocation[locationKey] = objSpec;
-        _typeCache[cacheKey] = ObjectTypeRef(objSpec);
-        _populateObjectSpec(objSpec, workingSchema, location);
-        if (pendingConstraints.isNotEmpty) {
-          final existingPointers = objSpec.conditionalConstraints
-              .map((constraint) => constraint.schemaPointer)
-              .toSet();
-          for (final constraint in pendingConstraints) {
-            if (existingPointers.add(constraint.schemaPointer)) {
-              objSpec.conditionalConstraints.add(constraint);
-            }
-          }
-        }
-        return objSpec;
-      });
-
-      final ref = ObjectTypeRef(spec);
-      if (pendingConstraints.isNotEmpty) {
-        final existingPointers = spec.conditionalConstraints
-            .map((c) => c.schemaPointer)
-            .toSet();
-        for (final constraint in pendingConstraints) {
-          if (existingPointers.add(constraint.schemaPointer)) {
-            spec.conditionalConstraints.add(constraint);
-          }
-        }
-      }
-      _typeCache[cacheKey] = ref;
-      return ref;
-    }
-
-    if (normalizedType == 'string') {
-      final format = workingSchema['format'] as String?;
-      final hint = _lookupFormatHint(format);
-      if (hint != null && _options.enableFormatHints) {
-        if (hint.helper != null) {
-          _helpers.putIfAbsent(hint.helper!.name, () => hint.helper!);
-        }
-        final ref = FormatTypeRef(
-          format: hint.name,
-          typeName: hint.typeName,
-          deserialize: hint.deserialize,
-          serialize: hint.serialize,
-          helperTypeName: hint.helper?.name,
-        );
+        final ref = ListTypeRef(itemType);
         _typeCache[cacheKey] = ref;
         return ref;
       }
-    }
 
-    if (normalizedType == 'array') {
-      final items = workingSchema['items'];
-      final itemPointer = _pointerChild(location.pointer, 'items');
-      final itemType = _resolveSchema(
-        items is Map<String, dynamic> ? items : null,
-        _SchemaLocation(uri: location.uri, pointer: itemPointer),
-        suggestedClassName: suggestedClassName != null
-            ? '${suggestedClassName}Item'
-            : null,
-      );
-      final ref = ListTypeRef(itemType);
-      _typeCache[cacheKey] = ref;
-      return ref;
+      final primitive = _primitiveFromType(normalizedType);
+      _typeCache[cacheKey] = primitive;
+      return primitive;
+    } finally {
+      _inProgress.remove(cacheKey);
     }
-
-    final primitive = _primitiveFromType(normalizedType);
-    _typeCache[cacheKey] = primitive;
-    return primitive;
   }
 
   TypeRef _resolveUnion(
@@ -384,6 +420,7 @@ class _SchemaWalker {
     List<dynamic> members,
     String keyword, {
     String? suggestedClassName,
+    required SchemaDialect dialect,
   }) {
     final unionPointer = _pointerChild(location.pointer, keyword);
     final resolvedMembers = <_ResolvedSchema>[];
@@ -416,6 +453,7 @@ class _SchemaWalker {
     var allObjects = true;
     for (var index = 0; index < resolvedMembers.length; index++) {
       final resolved = resolvedMembers[index];
+      final originalMember = members[index];
       final variantName = _unionVariantSuggestion(
         schema['title'] as String? ??
             suggestedClassName ??
@@ -439,10 +477,17 @@ class _SchemaWalker {
         typeRef = EnumTypeRef(_enumByLocation[variantKey]!);
         _typeCache[variantKey] = typeRef;
       } else {
+        final bool isReference =
+            originalMember is Map<String, dynamic> &&
+            originalMember.containsKey('\$ref');
+        final childDialect = isReference
+            ? _documentDialect(resolved.location.uri)
+            : dialect;
         typeRef = _resolveSchema(
           resolved.schema,
           resolved.location,
           suggestedClassName: variantName,
+          dialect: childDialect,
         );
       }
       variantTypes.add(typeRef);
@@ -526,6 +571,7 @@ class _SchemaWalker {
   void _processDefinitions(
     Map<String, dynamic> schema,
     _SchemaLocation location,
+    SchemaDialect dialect,
   ) {
     final definitions = schema['definitions'];
     if (definitions is Map<String, dynamic>) {
@@ -541,6 +587,7 @@ class _SchemaWalker {
             value,
             _SchemaLocation(uri: location.uri, pointer: pointer),
             suggestedClassName: key,
+            dialect: dialect,
           );
         }
       }
@@ -560,10 +607,118 @@ class _SchemaWalker {
             value,
             _SchemaLocation(uri: location.uri, pointer: pointer),
             suggestedClassName: key,
+            dialect: dialect,
           );
         }
       }
     }
+  }
+
+  SchemaDialect _detectDocumentDialect(Uri uri, Map<String, dynamic> document) {
+    if (document is Map<String, dynamic>) {
+      return _dialectForSchema(
+        document,
+        _SchemaLocation(uri: uri, pointer: '#'),
+        _options.defaultDialect,
+      );
+    }
+    if (_options.defaultDialect == null) {
+      _schemaError(
+        'No JSON Schema dialect declared and no default dialect configured.',
+        _SchemaLocation(uri: uri, pointer: '#'),
+      );
+    }
+    return _options.defaultDialect!;
+  }
+
+  SchemaDialect _dialectForSchema(
+    Map<String, dynamic> schema,
+    _SchemaLocation location,
+    SchemaDialect? inherited,
+  ) {
+    final Object? declared = schema['\$schema'];
+    SchemaDialect? active = inherited;
+    if (declared != null) {
+      if (declared is! String) {
+        _schemaError('Expected "\$schema" to be a string', location);
+      }
+      final resolvedDialect = SchemaDialect.lookup(
+        declared,
+        _options.supportedDialects,
+      );
+      if (resolvedDialect == null) {
+        final supported = _options.supportedDialects.keys.join(', ');
+        _schemaError(
+          'Unsupported JSON Schema dialect "$declared". '
+          'Supported dialects: $supported',
+          location,
+        );
+      }
+      active = resolvedDialect;
+    }
+    if (active == null) {
+      _schemaError(
+        'No JSON Schema dialect declared and no default dialect configured.',
+        location,
+      );
+    }
+    _validateVocabulary(schema, active, location);
+    return active;
+  }
+
+  void _validateVocabulary(
+    Map<String, dynamic> schema,
+    SchemaDialect dialect,
+    _SchemaLocation location,
+  ) {
+    final Object? vocab = schema['\$vocabulary'];
+    if (vocab == null) {
+      for (final entry in dialect.defaultVocabularies.entries) {
+        if (entry.value && !dialect.supportsVocabulary(entry.key)) {
+          _schemaError(
+            'Dialect ${dialect.uri} requires vocabulary ${entry.key}, '
+            'which is not supported by this generator.',
+            location,
+          );
+        }
+      }
+      return;
+    }
+    if (vocab is! Map<String, dynamic>) {
+      _schemaError('Expected "\$vocabulary" to be an object', location);
+    }
+    for (final entry in (vocab as Map<String, dynamic>).entries) {
+      final value = entry.value;
+      if (value is! bool) {
+        _schemaError('Expected "\$vocabulary" values to be booleans', location);
+      }
+      if (value && !dialect.supportsVocabulary(entry.key)) {
+        _schemaError(
+          'Vocabulary ${entry.key} is required but not supported.',
+          location,
+        );
+      }
+    }
+  }
+
+  SchemaDialect _documentDialect(Uri uri) {
+    final dialect = _documentDialects[uri];
+    if (dialect != null) {
+      return dialect;
+    }
+    if (_options.defaultDialect == null) {
+      _schemaError(
+        'No JSON Schema dialect declared and no default dialect configured.',
+        _SchemaLocation(uri: uri, pointer: '#'),
+      );
+    }
+    return _options.defaultDialect!;
+  }
+
+  Never _schemaError(String message, _SchemaLocation location) {
+    final pointer = location.pointer == '#' ? '' : location.pointer;
+    final where = '${location.uri}$pointer';
+    throw FormatException('$message (at $where)');
   }
 
   Map<String, dynamic> _mergeAllOfSchemas(
@@ -690,6 +845,7 @@ class _SchemaWalker {
     IrClass spec,
     Map<String, dynamic> schema,
     _SchemaLocation location,
+    SchemaDialect dialect,
   ) {
     final properties = schema['properties'];
     final requiredSet = switch (schema['required']) {
@@ -731,6 +887,7 @@ class _SchemaWalker {
           propertyMap,
           _SchemaLocation(uri: location.uri, pointer: propertyPointer),
           suggestedClassName: suggestedName,
+          dialect: dialect,
         );
 
         final isRequired = requiredSet.contains(key);
@@ -778,12 +935,14 @@ class _SchemaWalker {
       schema,
       location,
       usedFieldNames,
+      dialect,
     );
     final patternField = _buildPatternPropertiesField(
       spec,
       schema,
       location,
       usedFieldNames,
+      dialect,
     );
     if (patternField != null) {
       spec.patternPropertiesField = patternField;
@@ -973,6 +1132,7 @@ class _SchemaWalker {
     Map<String, dynamic> schema,
     _SchemaLocation location,
     Set<String> usedFieldNames,
+    SchemaDialect dialect,
   ) {
     final additionalRaw = schema['additionalProperties'];
     if (additionalRaw is Map<String, dynamic>) {
@@ -988,6 +1148,7 @@ class _SchemaWalker {
         additionalRaw,
         _SchemaLocation(uri: location.uri, pointer: additionalPointer),
         suggestedClassName: '${spec.name}AdditionalProperty',
+        dialect: dialect,
       );
       return IrDynamicKeyField(
         fieldName: fieldName,
@@ -1008,6 +1169,7 @@ class _SchemaWalker {
     Map<String, dynamic> schema,
     _SchemaLocation location,
     Set<String> usedFieldNames,
+    SchemaDialect dialect,
   ) {
     final raw = schema['patternProperties'];
     if (raw is! Map<String, dynamic> || raw.isEmpty) {
@@ -1034,6 +1196,7 @@ class _SchemaWalker {
         matcherSchema,
         _SchemaLocation(uri: location.uri, pointer: patternPointer),
         suggestedClassName: '${spec.name}PatternProperty$index',
+        dialect: dialect,
       );
       matchers.add(IrPatternMatcher(pattern: pattern, typeRef: typeRef));
       identities.add(typeRef.identity);
@@ -1279,6 +1442,10 @@ class _SchemaWalker {
     }
     final document = _documentLoader(uri);
     _documentCache[uri] = document;
+    if (!_documentDialects.containsKey(uri)) {
+      final dialect = _detectDocumentDialect(uri, document);
+      _documentDialects[uri] = dialect;
+    }
     return document;
   }
 

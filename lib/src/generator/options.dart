@@ -18,6 +18,8 @@ class SchemaGeneratorOptions {
     this.enableFormatHints = false,
     this.emitValidationHelpers = false,
     this.emitReadmeSnippets = false,
+    this.defaultDialect = SchemaDialect.latest,
+    this.supportedDialects = SchemaDialect.defaultDialectRegistry,
   });
 
   final String? rootClassName;
@@ -35,6 +37,8 @@ class SchemaGeneratorOptions {
   final bool enableFormatHints;
   final bool emitValidationHelpers;
   final bool emitReadmeSnippets;
+  final SchemaDialect? defaultDialect;
+  final Map<String, SchemaDialect> supportedDialects;
 
   SchemaGeneratorOptions copyWith({
     String? inferredRootClass,
@@ -48,6 +52,8 @@ class SchemaGeneratorOptions {
     bool? enableFormatHints,
     bool? emitValidationHelpers,
     bool? emitReadmeSnippets,
+    SchemaDialect? defaultDialect,
+    Map<String, SchemaDialect>? supportedDialects,
   }) {
     return SchemaGeneratorOptions(
       rootClassName: rootClassName,
@@ -66,6 +72,8 @@ class SchemaGeneratorOptions {
       emitValidationHelpers:
           emitValidationHelpers ?? this.emitValidationHelpers,
       emitReadmeSnippets: emitReadmeSnippets ?? this.emitReadmeSnippets,
+      defaultDialect: defaultDialect ?? this.defaultDialect,
+      supportedDialects: supportedDialects ?? this.supportedDialects,
     );
   }
 

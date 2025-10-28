@@ -7,6 +7,7 @@ import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 
 part 'generator/naming.dart';
+part 'generator/dialect.dart';
 part 'generator/options.dart';
 part 'generator/ir.dart';
 part 'generator/schema_generator.dart';

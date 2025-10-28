@@ -26,6 +26,26 @@ class SchemaToDartBuilder implements Builder {
       false,
     );
     final networkCachePath = options.config['network_cache_path'] as String?;
+    final defaultDialectUri = options.config['default_dialect'] as String?;
+    SchemaDialect? defaultDialect;
+    if (defaultDialectUri == null) {
+      defaultDialect = SchemaDialect.latest;
+    } else if (defaultDialectUri.trim().toLowerCase() == 'none') {
+      defaultDialect = null;
+    } else {
+      final dialect = SchemaDialect.lookup(
+        defaultDialectUri,
+        SchemaDialect.defaultDialectRegistry,
+      );
+      if (dialect == null) {
+        final supported = SchemaDialect.defaultDialectRegistry.keys.join(', ');
+        throw ArgumentError(
+          'Unsupported default_dialect "$defaultDialectUri". '
+          'Supported dialects: $supported, or "none" to require explicit declarations.',
+        );
+      }
+      defaultDialect = dialect;
+    }
 
     return SchemaToDartBuilder(
       SchemaGeneratorOptions(
@@ -37,6 +57,7 @@ class SchemaToDartBuilder implements Builder {
         allowNetworkRefs: allowNetworkRefs,
         networkCachePath: networkCachePath,
         onWarning: log.warning,
+        defaultDialect: defaultDialect,
       ),
     );
   }
