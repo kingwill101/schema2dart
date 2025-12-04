@@ -4,14 +4,14 @@
 
 import 'validation_error.dart';
 
-class Class1Item {
+class InExCludeItem {
   final Map<String, dynamic>? additionalProperties;
 
-  const Class1Item({
+  const InExCludeItem({
     this.additionalProperties,
   });
 
-  factory Class1Item.fromJson(Map<String, dynamic> json) {
+  factory InExCludeItem.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
     var unmatched = Map<String, dynamic>.from(remaining);
     Map<String, dynamic>? additionalPropertiesValue;
@@ -26,7 +26,7 @@ class Class1Item {
     } else {
       additionalPropertiesValue = null;
     }
-    return Class1Item(
+    return InExCludeItem(
       additionalProperties: additionalPropertiesValue,
     );
   }

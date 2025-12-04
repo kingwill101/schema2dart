@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TestSchema",
+  "type": "object",
+  "properties": {
+    "config": {
+      "description": "Configuration with multiple variants",
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Simple string config"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of strings"
+        },
+        {
+          "type": "object",
+          "description": "Object config with nested properties",
+          "properties": {
+            "database": {
+              "type": "object",
+              "properties": {
+                "host": {
+                  "type": "string"
+                },
+                "port": {
+                  "type": "integer"
+                }
+              }
+            },
+            "cache": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "ttl": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "required": ["config"]
+}

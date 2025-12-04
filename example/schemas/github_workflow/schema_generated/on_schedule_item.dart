@@ -4,14 +4,14 @@
 
 import 'validation_error.dart';
 
-class Class22ScheduleItem {
+class OnScheduleItem {
   final String? cron;
 
-  const Class22ScheduleItem({
+  const OnScheduleItem({
     this.cron,
   });
 
-  factory Class22ScheduleItem.fromJson(Map<String, dynamic> json) {
+  factory OnScheduleItem.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
     final cron = json['cron'] as String?;
     remaining.remove('cron');
@@ -20,7 +20,7 @@ class Class22ScheduleItem {
       final unexpected = unmatched.keys.join(', ');
       throw ArgumentError('Unexpected additional properties: $unexpected');
     }
-    return Class22ScheduleItem(
+    return OnScheduleItem(
       cron: cron,
     );
   }

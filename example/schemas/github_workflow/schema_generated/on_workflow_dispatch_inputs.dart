@@ -6,14 +6,14 @@ import 'validation_error.dart';
 import 'workflow_dispatch_input.dart';
 
 /// Input parameters allow you to specify data that the action expects to use during runtime. GitHub stores input parameters as environment variables. Input ids with uppercase letters are converted to lowercase during runtime. We recommended using lowercase input ids.
-class Class22WorkflowDispatchInputs {
+class OnWorkflowDispatchInputs {
   final Map<String, WorkflowDispatchInput>? patternProperties;
 
-  const Class22WorkflowDispatchInputs({
+  const OnWorkflowDispatchInputs({
     this.patternProperties,
   });
 
-  factory Class22WorkflowDispatchInputs.fromJson(Map<String, dynamic> json) {
+  factory OnWorkflowDispatchInputs.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
     var unmatched = Map<String, dynamic>.from(remaining);
     Map<String, WorkflowDispatchInput>? patternPropertiesValue;
@@ -39,7 +39,7 @@ class Class22WorkflowDispatchInputs {
       final unexpected = unmatched.keys.join(', ');
       throw ArgumentError('Unexpected additional properties: $unexpected');
     }
-    return Class22WorkflowDispatchInputs(
+    return OnWorkflowDispatchInputs(
       patternProperties: patternPropertiesValue,
     );
   }

@@ -4,12 +4,12 @@
 
 import 'validation_error.dart';
 
-class Class02 {
+class EventObject {
 
-  const Class02();
+  const EventObject();
 
-  factory Class02.fromJson(Map<String, dynamic> json) {
-    return Class02(
+  factory EventObject.fromJson(Map<String, dynamic> json) {
+    return EventObject(
     );
   }
 

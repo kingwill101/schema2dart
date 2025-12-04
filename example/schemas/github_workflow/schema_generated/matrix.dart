@@ -4,16 +4,16 @@
 
 import 'validation_error.dart';
 
-class Class03 {
+class Matrix {
   final Map<String, dynamic>? patternProperties;
   final Map<String, dynamic>? additionalProperties;
 
-  const Class03({
+  const Matrix({
     this.patternProperties,
     this.additionalProperties,
   });
 
-  factory Class03.fromJson(Map<String, dynamic> json) {
+  factory Matrix.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
     var unmatched = Map<String, dynamic>.from(remaining);
     Map<String, dynamic>? patternPropertiesValue;
@@ -47,7 +47,7 @@ class Class03 {
     } else {
       additionalPropertiesValue = null;
     }
-    return Class03(
+    return Matrix(
       patternProperties: patternPropertiesValue,
       additionalProperties: additionalPropertiesValue,
     );

@@ -5,18 +5,18 @@
 import 'validation_error.dart';
 
 /// A string identifier to associate with the output. The value of <output_id> is a map of the output's metadata. The <output_id> must be a unique identifier within the outputs object. The <output_id> must start with a letter or _ and contain only alphanumeric characters, -, or _.
-class Class22WorkflowCallOutputsPatternProperty1 {
+class OnWorkflowCallOutputsPatternProperty1 {
   /// A string description of the output parameter.
   final String? description;
   /// The value that the output parameter will be mapped to. You can set this to a string or an expression with context. For example, you can use the steps context to set the value of an output to the output value of a step.
   final String value;
 
-  const Class22WorkflowCallOutputsPatternProperty1({
+  const OnWorkflowCallOutputsPatternProperty1({
     this.description,
     required this.value,
   });
 
-  factory Class22WorkflowCallOutputsPatternProperty1.fromJson(Map<String, dynamic> json) {
+  factory OnWorkflowCallOutputsPatternProperty1.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
     final description = json['description'] as String?;
     remaining.remove('description');
@@ -27,7 +27,7 @@ class Class22WorkflowCallOutputsPatternProperty1 {
       final unexpected = unmatched.keys.join(', ');
       throw ArgumentError('Unexpected additional properties: $unexpected');
     }
-    return Class22WorkflowCallOutputsPatternProperty1(
+    return OnWorkflowCallOutputsPatternProperty1(
       description: description,
       value: value,
     );

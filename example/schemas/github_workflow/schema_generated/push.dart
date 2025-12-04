@@ -4,7 +4,7 @@
 
 import 'validation_error.dart';
 
-class Class13 {
+class Push {
   final List<String>? branches;
   final List<String>? branchesIgnore;
   final List<String>? paths;
@@ -12,7 +12,7 @@ class Class13 {
   final List<String>? tags;
   final List<String>? tagsIgnore;
 
-  const Class13({
+  const Push({
     this.branches,
     this.branchesIgnore,
     this.paths,
@@ -21,7 +21,7 @@ class Class13 {
     this.tagsIgnore,
   });
 
-  factory Class13.fromJson(Map<String, dynamic> json) {
+  factory Push.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
     final branches = json['branches'] == null ? null : (json['branches'] as List).map((e) => e as String).toList();
     remaining.remove('branches');
@@ -35,7 +35,7 @@ class Class13 {
     remaining.remove('tags');
     final tagsIgnore = json['tags-ignore'] == null ? null : (json['tags-ignore'] as List).map((e) => e as String).toList();
     remaining.remove('tags-ignore');
-    return Class13(
+    return Push(
       branches: branches,
       branchesIgnore: branchesIgnore,
       paths: paths,

@@ -4,14 +4,14 @@
 
 import 'validation_error.dart';
 
-class Class0 {
+class Env {
   final Map<String, dynamic>? additionalProperties;
 
-  const Class0({
+  const Env({
     this.additionalProperties,
   });
 
-  factory Class0.fromJson(Map<String, dynamic> json) {
+  factory Env.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
     var unmatched = Map<String, dynamic>.from(remaining);
     Map<String, dynamic>? additionalPropertiesValue;
@@ -26,7 +26,7 @@ class Class0 {
     } else {
       additionalPropertiesValue = null;
     }
-    return Class0(
+    return Env(
       additionalProperties: additionalPropertiesValue,
     );
   }

@@ -4,22 +4,22 @@
 
 import 'validation_error.dart';
 
-class Class2 {
+class RunsOn {
   final String? group;
   final dynamic labels;
 
-  const Class2({
+  const RunsOn({
     this.group,
     this.labels,
   });
 
-  factory Class2.fromJson(Map<String, dynamic> json) {
+  factory RunsOn.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
     final group = json['group'] as String?;
     remaining.remove('group');
     final labels = json['labels'];
     remaining.remove('labels');
-    return Class2(
+    return RunsOn(
       group: group,
       labels: labels,
     );
