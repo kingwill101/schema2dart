@@ -15,6 +15,8 @@ class SchemaGenerator {
     }
     final defaultLoader = _DefaultSchemaDocumentLoader(
       allowNetworkRefs: options.allowNetworkRefs,
+      allowedNetworkHosts: options.allowedNetworkHosts,
+      allowedFilePaths: options.allowedFilePaths,
       cacheDirectoryPath: options.networkCachePath,
       onWarning: options.onWarning,
     );
@@ -461,9 +463,44 @@ class _SchemaEmitter {
     _unionVariantByClass = variants;
   }
 
+  Set<String> _getRequiredEncodings(SchemaIr ir) {
+    final encodings = <String>{};
+    for (final klass in ir.classes) {
+      for (final prop in klass.properties) {
+        if (prop.typeRef is ContentEncodedTypeRef) {
+          encodings.add((prop.typeRef as ContentEncodedTypeRef).encoding);
+        }
+      }
+    }
+    return encodings;
+  }
+
   String renderLibrary(SchemaIr ir) {
     setUnions(ir.unions);
     final buffer = StringBuffer();
+    
+    // Check if any property uses ContentEncodedTypeRef and add required imports/helpers
+    final requiredEncodings = _getRequiredEncodings(ir);
+    if (requiredEncodings.isNotEmpty) {
+      buffer.writeln("import 'dart:convert';");
+      buffer.writeln("import 'dart:typed_data';");
+      buffer.writeln();
+      
+      // Add helper functions for non-base64 encodings
+      if (requiredEncodings.contains('base16')) {
+        buffer.writeln(_base16Helpers);
+        buffer.writeln();
+      }
+      if (requiredEncodings.contains('base32')) {
+        buffer.writeln(_base32Helpers);
+        buffer.writeln();
+      }
+      if (requiredEncodings.contains('quoted-printable')) {
+        buffer.writeln(_quotedPrintableHelpers);
+        buffer.writeln();
+      }
+    }
+    
     for (var i = 0; i < ir.classes.length; i++) {
       buffer.write(renderClass(ir.classes[i]));
       final isLastClass = i == ir.classes.length - 1;
@@ -797,6 +834,12 @@ class _SchemaEmitter {
       if (property.description != null &&
           property.description!.trim().isNotEmpty) {
         _writeDocumentation(buffer, property.description!, indent: '  ');
+      }
+      if (property.isReadOnly) {
+        buffer.writeln('  /// READ-ONLY: This property is managed by the server and should not be sent in requests.');
+      }
+      if (property.isWriteOnly) {
+        buffer.writeln('  /// WRITE-ONLY: This property should not be included in responses (e.g., passwords, secrets).');
       }
       if (property.extensionAnnotations.isNotEmpty) {
         for (final entry in property.extensionAnnotations.entries) {
@@ -1996,6 +2039,146 @@ class _SchemaEmitter {
     }
     return null;
   }
+
+  // Helper functions for content encoding
+  static const String _base16Helpers = '''
+// Base16 (hex) encoding/decoding helpers
+Uint8List _base16Decode(String input) {
+  final hex = input.toUpperCase().replaceAll(RegExp(r'\\s'), '');
+  if (hex.length % 2 != 0) {
+    throw FormatException('Invalid base16 string length');
+  }
+  final bytes = Uint8List(hex.length ~/ 2);
+  for (var i = 0; i < bytes.length; i++) {
+    final byte = int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16);
+    bytes[i] = byte;
+  }
+  return bytes;
+}
+
+String _base16Encode(Uint8List bytes) {
+  final buffer = StringBuffer();
+  for (final byte in bytes) {
+    buffer.write(byte.toRadixString(16).toUpperCase().padLeft(2, '0'));
+  }
+  return buffer.toString();
+}''';
+
+  static const String _base32Helpers = '''
+// Base32 encoding/decoding helpers
+Uint8List _base32Decode(String input) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  final normalized = input.toUpperCase().replaceAll(RegExp(r'[=\\s]'), '');
+  final bits = <int>[];
+  
+  for (final char in normalized.split('')) {
+    final value = alphabet.indexOf(char);
+    if (value == -1) {
+      throw FormatException('Invalid base32 character: \$char');
+    }
+    for (var i = 4; i >= 0; i--) {
+      bits.add((value >> i) & 1);
+    }
+  }
+  
+  final bytes = <int>[];
+  for (var i = 0; i < bits.length - (bits.length % 8); i += 8) {
+    var byte = 0;
+    for (var j = 0; j < 8; j++) {
+      byte = (byte << 1) | bits[i + j];
+    }
+    bytes.add(byte);
+  }
+  
+  return Uint8List.fromList(bytes);
+}
+
+String _base32Encode(Uint8List bytes) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  final bits = <int>[];
+  
+  for (final byte in bytes) {
+    for (var i = 7; i >= 0; i--) {
+      bits.add((byte >> i) & 1);
+    }
+  }
+  
+  final buffer = StringBuffer();
+  for (var i = 0; i < bits.length; i += 5) {
+    var value = 0;
+    for (var j = 0; j < 5 && i + j < bits.length; j++) {
+      value = (value << 1) | bits[i + j];
+    }
+    if (i + 5 > bits.length) {
+      value <<= 5 - (bits.length - i);
+    }
+    buffer.write(alphabet[value]);
+  }
+  
+  while (buffer.length % 8 != 0) {
+    buffer.write('=');
+  }
+  
+  return buffer.toString();
+}''';
+
+  static const String _quotedPrintableHelpers = '''
+// Quoted-printable encoding/decoding helpers
+Uint8List _quotedPrintableDecode(String input) {
+  final bytes = <int>[];
+  var i = 0;
+  
+  while (i < input.length) {
+    if (input[i] == '=') {
+      if (i + 2 < input.length) {
+        final hex = input.substring(i + 1, i + 3);
+        if (hex == '\\r\\n' || hex == '\\n') {
+          // Soft line break, skip
+          i += hex == '\\r\\n' ? 3 : 2;
+          continue;
+        }
+        try {
+          bytes.add(int.parse(hex, radix: 16));
+          i += 3;
+        } catch (_) {
+          bytes.add(input.codeUnitAt(i));
+          i++;
+        }
+      } else {
+        bytes.add(input.codeUnitAt(i));
+        i++;
+      }
+    } else {
+      bytes.add(input.codeUnitAt(i));
+      i++;
+    }
+  }
+  
+  return Uint8List.fromList(bytes);
+}
+
+String _quotedPrintableEncode(Uint8List bytes) {
+  final buffer = StringBuffer();
+  var lineLength = 0;
+  
+  for (final byte in bytes) {
+    if (lineLength >= 75) {
+      buffer.write('=\\n');
+      lineLength = 0;
+    }
+    
+    if ((byte >= 33 && byte <= 60) || (byte >= 62 && byte <= 126)) {
+      buffer.writeCharCode(byte);
+      lineLength++;
+    } else {
+      final hex = byte.toRadixString(16).toUpperCase().padLeft(2, '0');
+      buffer.write('=\$hex');
+      lineLength += 3;
+    }
+  }
+  
+  return buffer.toString();
+}''';
 }
 
 bool _classNeedsValidation(
@@ -2155,11 +2338,15 @@ class MultiOutputPlan {
 class _DefaultSchemaDocumentLoader {
   _DefaultSchemaDocumentLoader({
     required this.allowNetworkRefs,
+    this.allowedNetworkHosts,
+    this.allowedFilePaths,
     this.cacheDirectoryPath,
     this.onWarning,
   });
 
   final bool allowNetworkRefs;
+  final List<String>? allowedNetworkHosts;
+  final List<String>? allowedFilePaths;
   final String? cacheDirectoryPath;
   final void Function(String message)? onWarning;
   Directory? _cacheDirectory;
@@ -2167,6 +2354,18 @@ class _DefaultSchemaDocumentLoader {
   Map<String, dynamic> call(Uri uri) {
     final resolved = _ensureScheme(uri);
     if (resolved.scheme == 'file') {
+      if (allowedFilePaths != null && allowedFilePaths!.isNotEmpty) {
+        final filePath = resolved.toFilePath();
+        final isAllowed = allowedFilePaths!.any((allowedPath) {
+          return filePath.startsWith(allowedPath);
+        });
+        if (!isAllowed) {
+          throw StateError(
+            'File path $filePath is not in the allowed paths: '
+            '${allowedFilePaths!.join(", ")}',
+          );
+        }
+      }
       final file = File.fromUri(resolved);
       if (!file.existsSync()) {
         throw ArgumentError('Referenced schema not found at $resolved');
@@ -2180,6 +2379,15 @@ class _DefaultSchemaDocumentLoader {
           'Network references are disabled. Unable to load $resolved. '
           'Consider vendoring the schema locally or enable allow_network_refs.',
         );
+      }
+      if (allowedNetworkHosts != null && allowedNetworkHosts!.isNotEmpty) {
+        final host = resolved.host;
+        if (!allowedNetworkHosts!.contains(host)) {
+          throw StateError(
+            'Network host $host is not in the allowed hosts: '
+            '${allowedNetworkHosts!.join(", ")}',
+          );
+        }
       }
       final cacheFile = _prepareCacheFile(resolved);
       if (cacheFile != null && cacheFile.existsSync()) {

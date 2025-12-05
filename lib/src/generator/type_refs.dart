@@ -56,6 +56,72 @@ class DynamicTypeRef extends PrimitiveTypeRef {
   String get identity => 'dynamic';
 }
 
+/// Type reference for encoded binary content (Uint8List).
+/// Supports: base64, base16, base32, quoted-printable
+class ContentEncodedTypeRef extends TypeRef {
+  const ContentEncodedTypeRef(this.encoding);
+
+  final String encoding;
+
+  @override
+  String dartType({bool nullable = false}) =>
+      nullable ? 'Uint8List?' : 'Uint8List';
+
+  String _decoderFunction() {
+    switch (encoding) {
+      case 'base64':
+        return 'base64Decode';
+      case 'base16':
+        return '_base16Decode';
+      case 'base32':
+        return '_base32Decode';
+      case 'quoted-printable':
+        return '_quotedPrintableDecode';
+      default:
+        return 'base64Decode'; // fallback
+    }
+  }
+
+  String _encoderFunction() {
+    switch (encoding) {
+      case 'base64':
+        return 'base64Encode';
+      case 'base16':
+        return '_base16Encode';
+      case 'base32':
+        return '_base32Encode';
+      case 'quoted-printable':
+        return '_quotedPrintableEncode';
+      default:
+        return 'base64Encode'; // fallback
+    }
+  }
+
+  @override
+  String deserializeInline(String sourceExpression, {required bool required}) {
+    final decoder = _decoderFunction();
+    if (required) {
+      return '$decoder($sourceExpression as String)';
+    }
+    return '$sourceExpression != null ? $decoder($sourceExpression as String) : null';
+  }
+
+  @override
+  String serializeInline(String valueExpression, {required bool required}) =>
+      '${_encoderFunction()}($valueExpression)';
+
+  @override
+  bool get requiresConversionOnSerialize => true;
+
+  @override
+  String get identity => 'encoded:$encoding';
+}
+
+/// Legacy alias for backward compatibility
+class Base64TypeRef extends ContentEncodedTypeRef {
+  const Base64TypeRef() : super('base64');
+}
+
 class FalseTypeRef extends TypeRef {
   const FalseTypeRef();
 

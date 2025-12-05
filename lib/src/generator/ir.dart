@@ -75,6 +75,11 @@ class IrProperty {
     this.isDeprecated = false,
     this.defaultValue,
     this.examples = const <Object?>[],
+    this.contentMediaType,
+    this.contentEncoding,
+    this.contentSchema,
+    this.isReadOnly = false,
+    this.isWriteOnly = false,
     Map<String, Object?>? extensionAnnotations,
   }) : extensionAnnotations = extensionAnnotations ?? <String, Object?>{};
 
@@ -91,6 +96,21 @@ class IrProperty {
   final List<Object?> examples;
   final String schemaPointer;
   final Map<String, Object?> extensionAnnotations;
+  
+  /// MIME type of the content (e.g., "image/png", "application/json")
+  final String? contentMediaType;
+  
+  /// Encoding used for the content (e.g., "base64")
+  final String? contentEncoding;
+  
+  /// Schema for validating decoded content
+  final Map<String, dynamic>? contentSchema;
+  
+  /// Property is read-only (managed by server, should not be sent in requests)
+  final bool isReadOnly;
+  
+  /// Property is write-only (should not be returned in responses, e.g., passwords)
+  final bool isWriteOnly;
 
   String get dartType => typeRef.dartType(nullable: !isRequired);
 

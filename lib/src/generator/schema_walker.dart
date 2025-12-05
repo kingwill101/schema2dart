@@ -339,6 +339,15 @@ class _SchemaWalker {
       _typeCache[cacheKey] = ref;
       return ref;
     }
+    
+    if (_inProgress.length >= _options.maxReferenceDepth) {
+      _schemaError(
+        'Maximum reference depth of ${_options.maxReferenceDepth} exceeded. '
+        'This may indicate a circular reference or excessively nested schema.',
+        location,
+      );
+    }
+    
     _inProgress.add(cacheKey);
 
     final pendingConstraints = <ConditionalConstraint>[];
@@ -486,8 +495,19 @@ class _SchemaWalker {
       final type = workingSchema['type'];
       final normalizedType = _normalizeTypeKeyword(type);
 
-      if (normalizedType == 'object' ||
-          workingSchema.containsKey('properties')) {
+      // Treat schema with title (but no type) as an object
+      final hasObjectLikeProperties = workingSchema.containsKey('properties') ||
+          workingSchema.containsKey('patternProperties') ||
+          workingSchema.containsKey('additionalProperties') ||
+          workingSchema.containsKey('required') ||
+          workingSchema.containsKey('dependentRequired') ||
+          workingSchema.containsKey('dependentSchemas');
+      
+      final shouldBeObject = normalizedType == 'object' ||
+          hasObjectLikeProperties ||
+          (workingSchema.containsKey('title') && normalizedType == null && !workingSchema.containsKey('enum'));
+
+      if (shouldBeObject) {
         final className = _allocateClassName(
           workingSchema['title'] as String? ??
               suggestedClassName ??
@@ -761,6 +781,28 @@ class _SchemaWalker {
     }
   }
 
+  bool _isNullableComposition(Map<String, dynamic> schema) {
+    // Check anyOf for null type
+    if (schema['anyOf'] is List) {
+      final anyOf = schema['anyOf'] as List;
+      for (final member in anyOf) {
+        if (member is Map<String, dynamic> && member['type'] == 'null') {
+          return true;
+        }
+      }
+    }
+    // Check oneOf for null type
+    if (schema['oneOf'] is List) {
+      final oneOf = schema['oneOf'] as List;
+      for (final member in oneOf) {
+        if (member is Map<String, dynamic> && member['type'] == 'null') {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   TypeRef _resolveUnion(
     Map<String, dynamic> schema,
     _SchemaLocation location,
@@ -771,6 +813,7 @@ class _SchemaWalker {
   }) {
     final unionPointer = _pointerChild(location.pointer, keyword);
     final resolvedMembers = <_ResolvedSchema>[];
+    var hasNullType = false;
 
     for (var index = 0; index < members.length; index++) {
       final memberPointer = _pointerChild(unionPointer, '$index');
@@ -780,6 +823,11 @@ class _SchemaWalker {
       );
       final member = members[index];
       if (member is Map<String, dynamic>) {
+        // Check if this member is a null type
+        if (member['type'] == 'null') {
+          hasNullType = true;
+          continue; // Skip null types from union processing
+        }
         if (member case {'\$ref': final String refValue}) {
           resolvedMembers.add(_resolveReference(refValue, memberLocation));
         } else {
@@ -794,6 +842,33 @@ class _SchemaWalker {
           'Union variants must be valid JSON Schema objects',
         );
       }
+    }
+
+    // If all members were null, or only one non-null member remains
+    if (resolvedMembers.isEmpty) {
+      return const DynamicTypeRef();
+    }
+    
+    if (resolvedMembers.length == 1 && hasNullType) {
+      // Single type + null = nullable version of that type
+      final resolved = resolvedMembers.first;
+      final variantName = _unionVariantSuggestion(
+        schema['title'] as String? ??
+            suggestedClassName ??
+            _nameFromPointer(location.pointer),
+        resolved.schema,
+        resolved.location,
+        0,
+      );
+      final typeRef = _resolveSchema(
+        resolved.schema,
+        resolved.location,
+        suggestedClassName: variantName,
+        dialect: dialect,
+      );
+      // Return a nullable wrapper or mark as nullable somehow
+      // For now, we'll return the type as-is and let the property handling deal with it
+      return typeRef;
     }
 
     final variantTypes = <TypeRef>[];
@@ -1445,14 +1520,33 @@ class _SchemaWalker {
             : null;
 
         final suggestedName = '${spec.name}_$key';
-        final propertyType = _resolveSchema(
+        var propertyType = _resolveSchema(
           propertySchema,
           _SchemaLocation(uri: location.uri, pointer: propertyPointer),
           suggestedClassName: suggestedName,
           dialect: dialect,
         );
 
-        final isRequired = requiredSet.contains(key);
+        // Override type if content encoding is present
+        if (_options.enableContentKeywords &&
+            propertyMap?['contentEncoding'] is String &&
+            propertyType is PrimitiveTypeRef &&
+            propertyType.typeName == 'String') {
+          final encoding = propertyMap!['contentEncoding'] as String;
+          // Supported encodings: base64, base16, base32, quoted-printable
+          if (['base64', 'base16', 'base32', 'quoted-printable']
+              .contains(encoding)) {
+            propertyType = ContentEncodedTypeRef(encoding);
+          }
+        }
+
+        // Check if property schema has nullable anyOf/oneOf
+        var schemaIsNullable = false;
+        if (propertyMap != null) {
+          schemaIsNullable = _isNullableComposition(propertyMap);
+        }
+        
+        final isRequired = requiredSet.contains(key) && !schemaIsNullable;
         final fieldName = _options.preferCamelCase
             ? _Naming.fieldName(key)
             : _Naming.identifier(key);
@@ -1482,6 +1576,21 @@ class _SchemaWalker {
             ? _extractExtensionAnnotations(propertyMap)
             : <String, Object?>{};
 
+        // Extract content keywords if enabled
+        final contentMediaType = _options.enableContentKeywords
+            ? (propertyMap?['contentMediaType'] as String?)
+            : null;
+        final contentEncoding = _options.enableContentKeywords
+            ? (propertyMap?['contentEncoding'] as String?)
+            : null;
+        final contentSchema = (_options.enableContentKeywords &&
+                propertyMap?['contentSchema'] is Map)
+            ? (propertyMap?['contentSchema'] as Map<String, dynamic>?)
+            : null;
+        
+        final readOnly = propertyMap?['readOnly'] == true;
+        final writeOnly = propertyMap?['writeOnly'] == true;
+
         final prop = IrProperty(
           jsonName: key,
           fieldName: fieldName,
@@ -1495,6 +1604,11 @@ class _SchemaWalker {
           isDeprecated: deprecated,
           defaultValue: defaultValue,
           examples: examples,
+          contentMediaType: contentMediaType,
+          contentEncoding: contentEncoding,
+          contentSchema: contentSchema,
+          isReadOnly: readOnly,
+          isWriteOnly: writeOnly,
           extensionAnnotations: extensionAnnotations,
         );
         spec.properties.add(prop);

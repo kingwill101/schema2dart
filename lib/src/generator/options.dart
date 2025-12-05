@@ -13,11 +13,15 @@ class SchemaGeneratorOptions {
     this.baseUri,
     this.documentLoader,
     this.allowNetworkRefs = false,
+    this.allowedNetworkHosts,
+    this.allowedFilePaths,
+    this.maxReferenceDepth = 100,
     this.networkCachePath,
     this.onWarning,
     this.enableFormatHints = false,
     this.emitValidationHelpers = false,
     this.emitReadmeSnippets = false,
+    this.enableContentKeywords = false,
     this.defaultDialect = SchemaDialect.latest,
     this.supportedDialects = SchemaDialect.defaultDialectRegistry,
   });
@@ -32,11 +36,15 @@ class SchemaGeneratorOptions {
   final Uri? baseUri;
   final SchemaDocumentLoader? documentLoader;
   final bool allowNetworkRefs;
+  final List<String>? allowedNetworkHosts;
+  final List<String>? allowedFilePaths;
+  final int maxReferenceDepth;
   final String? networkCachePath;
   final void Function(String message)? onWarning;
   final bool enableFormatHints;
   final bool emitValidationHelpers;
   final bool emitReadmeSnippets;
+  final bool enableContentKeywords;
   final SchemaDialect? defaultDialect;
   final Map<String, SchemaDialect> supportedDialects;
 
@@ -47,11 +55,15 @@ class SchemaGeneratorOptions {
     Uri? baseUri,
     SchemaDocumentLoader? documentLoader,
     bool? allowNetworkRefs,
+    List<String>? allowedNetworkHosts,
+    List<String>? allowedFilePaths,
+    int? maxReferenceDepth,
     String? networkCachePath,
     void Function(String message)? onWarning,
     bool? enableFormatHints,
     bool? emitValidationHelpers,
     bool? emitReadmeSnippets,
+    bool? enableContentKeywords,
     SchemaDialect? defaultDialect,
     Map<String, SchemaDialect>? supportedDialects,
   }) {
@@ -66,12 +78,16 @@ class SchemaGeneratorOptions {
       baseUri: baseUri ?? this.baseUri,
       documentLoader: documentLoader ?? this.documentLoader,
       allowNetworkRefs: allowNetworkRefs ?? this.allowNetworkRefs,
+      allowedNetworkHosts: allowedNetworkHosts ?? this.allowedNetworkHosts,
+      allowedFilePaths: allowedFilePaths ?? this.allowedFilePaths,
+      maxReferenceDepth: maxReferenceDepth ?? this.maxReferenceDepth,
       networkCachePath: networkCachePath ?? this.networkCachePath,
       onWarning: onWarning ?? this.onWarning,
       enableFormatHints: enableFormatHints ?? this.enableFormatHints,
       emitValidationHelpers:
           emitValidationHelpers ?? this.emitValidationHelpers,
       emitReadmeSnippets: emitReadmeSnippets ?? this.emitReadmeSnippets,
+      enableContentKeywords: enableContentKeywords ?? this.enableContentKeywords,
       defaultDialect: defaultDialect ?? this.defaultDialect,
       supportedDialects: supportedDialects ?? this.supportedDialects,
     );
