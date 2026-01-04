@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/enum-mixed-types",
+  "title": "Mixed Type Enum Example",
+  "description": "Demonstrates enums with mixed types",
+  "type": "object",
+  "properties": {
+    "stringEnum": {
+      "enum": ["red", "green", "blue"],
+      "description": "Simple string enum"
+    },
+    "numberEnum": {
+      "enum": [1, 2, 3, 5, 8],
+      "description": "Simple number enum"
+    },
+    "mixedEnum": {
+      "enum": ["active", 1, true, null],
+      "description": "Mixed type enum with string, number, boolean, and null"
+    },
+    "complexMixedEnum": {
+      "enum": ["status", 200, 404, true, false, null, {"type": "error"}],
+      "description": "Complex mixed enum with objects"
+    }
+  }
+}

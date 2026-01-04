@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/pattern-properties",
+  "title": "Pattern Properties Example",
+  "description": "Demonstrates patternProperties",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  },
+  "patternProperties": {
+    "^S_": {
+      "type": "string",
+      "description": "Properties starting with S_ are strings"
+    },
+    "^I_": {
+      "type": "integer",
+      "description": "Properties starting with I_ are integers"
+    }
+  },
+  "additionalProperties": false
+}

@@ -7,6 +7,7 @@ import 'validation_error.dart';
 /// x-category: testing
 /// x-version: 1.0.0
 class ExtensionAnnotationsTest {
+  /// Constraints: minimum: 18
   /// x-displayName: Age
   /// x-validationMessage: Must be 18 or older
   final int? age;

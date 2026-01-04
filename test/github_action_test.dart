@@ -38,12 +38,10 @@ void main() {
       expect(
         classNames,
         containsAll(<String>[
-          'RootSchemaRuns',
           'RunsJavascript',
           'RunsComposite',
           'RunsDocker',
-          'Outputs',
-          'OutputsComposite',
+          'RootSchemaOutputsComposite',
           'RootSchemaInputs',
         ]),
       );
@@ -52,7 +50,7 @@ void main() {
       expect(classNames, isNot(contains('RunsDocker2')));
 
       final union = ir.unions.singleWhere(
-        (union) => union.name == 'RootSchemaRuns',
+        (union) => union.name == 'Runs',
       );
       expect(
         union.variants.map((variant) => variant.classSpec.name).toList(),
@@ -66,9 +64,9 @@ void main() {
       final enumNames = ir.enums.map((enumeration) => enumeration.name).toSet();
       expect(
         enumNames,
-        containsAll(<String>['RunsJavascriptUsing', 'RootSchemaBrandingIcon']),
+        containsAll(<String>['Using', 'Icon']),
       );
-      expect(enumNames, isNot(contains('RunsJavascript2Using')));
+      expect(enumNames, isNot(contains('Using2')));
     });
 
     test(
@@ -101,20 +99,22 @@ void main() {
           baseName: 'github-action.schema',
         );
 
-        final rootRuns = plan.files['root_schema_runs.dart'];
+        final rootRuns = plan.files['runs.dart'];
         expect(rootRuns, isNotNull);
-        expect(rootRuns, contains("part 'runs_javascript.dart';"));
-        expect(rootRuns, contains("part 'runs_composite.dart';"));
-        expect(rootRuns, contains("part 'runs_docker.dart';"));
+        // Sealed class variants are now emitted in the same file, not as separate parts
+        expect(rootRuns, contains("class RunsJavascript extends Runs"));
+        expect(rootRuns, contains("class RunsComposite extends Runs"));
+        expect(rootRuns, contains("class RunsDocker extends Runs"));
 
-        final javascriptPart = plan.files['runs_javascript.dart'];
-        expect(javascriptPart, isNotNull);
-        expect(javascriptPart, contains("part of 'root_schema_runs.dart';"));
+        // No separate part files for sealed class variants
+        expect(plan.files.containsKey('runs_javascript.dart'), isFalse);
+        expect(plan.files.containsKey('runs_composite.dart'), isFalse);
+        expect(plan.files.containsKey('runs_docker.dart'), isFalse);
 
         final barrel = plan.barrel;
         expect(
           barrel,
-          contains("export '${plan.partsDirectory}/root_schema_runs.dart';"),
+          contains("export '${plan.partsDirectory}/runs.dart';"),
         );
         expect(barrel, isNot(contains("runs_javascript.dart")));
       },
@@ -136,7 +136,7 @@ void main() {
 
     test('composite steps capture required combinations as metadata', () {
       final stepsItem = ir.classes.firstWhere(
-        (klass) => klass.name == 'RunsCompositeStep',
+        (klass) => klass.name == 'Step',
       );
       expect(stepsItem.conditionalConstraints, isNotEmpty);
       final constraint = stepsItem.conditionalConstraints.singleWhere(

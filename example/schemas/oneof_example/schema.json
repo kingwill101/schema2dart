@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/oneof-example",
+  "title": "OneOf Example",
+  "description": "Demonstrates oneOf discriminated unions",
+  "type": "object",
+  "properties": {
+    "result": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "success": { "const": true },
+            "data": { "type": "string" }
+          },
+          "required": ["success", "data"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "success": { "const": false },
+            "error": { "type": "string" }
+          },
+          "required": ["success", "error"]
+        }
+      ]
+    }
+  }
+}

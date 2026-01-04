@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/anyof-example",
+  "title": "AnyOf Example",
+  "description": "Demonstrates anyOf unions",
+  "type": "object",
+  "properties": {
+    "stringOrNumber": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "number" }
+      ]
+    },
+    "complexUnion": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "user" },
+            "username": { "type": "string" }
+          },
+          "required": ["type", "username"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "admin" },
+            "adminLevel": { "type": "integer" }
+          },
+          "required": ["type", "adminLevel"]
+        }
+      ]
+    }
+  }
+}

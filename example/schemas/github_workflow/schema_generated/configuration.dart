@@ -4,14 +4,57 @@
 
 import 'validation_error.dart';
 
-class Configuration {
+sealed class Configuration {
+  const Configuration();
+
+  void validate({String pointer = '', ValidationContext? context});
+
+  factory Configuration.fromJson(dynamic json) {
+    if (json is String) return ConfigurationString(json);
+    if (json is num) return ConfigurationNum(json);
+    if (json is bool) return ConfigurationBool(json);
+    if (json is! Map<String, dynamic>) {
+      throw ArgumentError('Invalid Configuration value: ${json.runtimeType}');
+    }
+    final keys = json.keys.toSet();
+    final sortedKeys = keys.toList()..sort();
+    return ConfigurationObject.fromJson(json);
+  }
+
+  dynamic toJson();
+}
+class ConfigurationString extends Configuration {
+  final String value;
+
+  const ConfigurationString(this.value) : super();
+
+  @override
+  dynamic toJson() => value;
+}
+class ConfigurationNum extends Configuration {
+  final double value;
+
+  const ConfigurationNum(this.value) : super();
+
+  @override
+  dynamic toJson() => value;
+}
+class ConfigurationBool extends Configuration {
+  final bool value;
+
+  const ConfigurationBool(this.value) : super();
+
+  @override
+  dynamic toJson() => value;
+}
+class ConfigurationObject extends Configuration {
   final Map<String, dynamic>? additionalProperties;
 
-  const Configuration({
+  const ConfigurationObject({
     this.additionalProperties,
-  });
+  }) : super();
 
-  factory Configuration.fromJson(Map<String, dynamic> json) {
+  factory ConfigurationObject.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
     var unmatched = Map<String, dynamic>.from(remaining);
     Map<String, dynamic>? additionalPropertiesValue;
@@ -26,11 +69,12 @@ class Configuration {
     } else {
       additionalPropertiesValue = null;
     }
-    return Configuration(
+    return ConfigurationObject(
       additionalProperties: additionalPropertiesValue,
     );
   }
 
+  @override
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
     if (additionalProperties != null) {
@@ -41,5 +85,14 @@ class Configuration {
     return map;
   }
 
+  @override
   void validate({String pointer = '', ValidationContext? context}) {}
+}
+class ConfigurationArray extends Configuration {
+  final List<dynamic> value;
+
+  const ConfigurationArray(this.value) : super();
+
+  @override
+  dynamic toJson() => value;
 }

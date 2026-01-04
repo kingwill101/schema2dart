@@ -13,13 +13,13 @@ class RootSchemaInputsPatternProperty1 {
   /// A string description of the input parameter.
   final String description;
   /// A boolean to indicate whether the action requires the input parameter. Set to `true` when the parameter is required.
-  final bool? required;
+  final bool? required_;
 
   const RootSchemaInputsPatternProperty1({
     this.default_,
     this.deprecationMessage,
     required this.description,
-    this.required,
+    this.required_,
   });
 
   factory RootSchemaInputsPatternProperty1.fromJson(Map<String, dynamic> json) {
@@ -30,7 +30,7 @@ class RootSchemaInputsPatternProperty1 {
     remaining.remove('deprecationMessage');
     final description = json['description'] as String;
     remaining.remove('description');
-    final required = json['required'] as bool?;
+    final required_ = json['required'] as bool?;
     remaining.remove('required');
     var unmatched = Map<String, dynamic>.from(remaining);
     if (unmatched.isNotEmpty) {
@@ -41,7 +41,7 @@ class RootSchemaInputsPatternProperty1 {
       default_: default_,
       deprecationMessage: deprecationMessage,
       description: description,
-      required: required,
+      required_: required_,
     );
   }
 
@@ -50,7 +50,7 @@ class RootSchemaInputsPatternProperty1 {
     if (default_ != null) map['default'] = default_;
     if (deprecationMessage != null) map['deprecationMessage'] = deprecationMessage;
     map['description'] = description;
-    if (required != null) map['required'] = required;
+    if (required_ != null) map['required'] = required_;
     return map;
   }
 

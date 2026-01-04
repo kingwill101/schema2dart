@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/array-constraints",
+  "title": "Array Constraints Example",
+  "description": "Demonstrates array validation keywords",
+  "type": "object",
+  "properties": {
+    "minItems": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Array must have at least 1 item"
+    },
+    "maxItems": {
+      "type": "array",
+      "items": { "type": "number" },
+      "maxItems": 10,
+      "description": "Array can have at most 10 items"
+    },
+    "uniqueItems": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "All items must be unique"
+    },
+    "tupleArray": {
+      "type": "array",
+      "prefixItems": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" }
+      ],
+      "items": false,
+      "description": "Fixed tuple with exactly 3 items"
+    },
+    "containsExample": {
+      "type": "array",
+      "items": { "type": "number" },
+      "contains": { "minimum": 5 },
+      "minContains": 2,
+      "description": "Array must contain at least 2 numbers >= 5"
+    }
+  }
+}

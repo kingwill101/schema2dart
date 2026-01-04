@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/nested-refs",
+  "title": "Nested References Example",
+  "description": "Demonstrates $ref usage and nested definitions",
+  "$defs": {
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": { "type": "string" },
+        "city": { "type": "string" },
+        "country": { "type": "string" }
+      },
+      "required": ["street", "city"]
+    },
+    "person": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "age": { "type": "integer" },
+        "address": { "$ref": "#/$defs/address" }
+      },
+      "required": ["name"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "employee": {
+      "$ref": "#/$defs/person"
+    },
+    "manager": {
+      "allOf": [
+        { "$ref": "#/$defs/person" },
+        {
+          "type": "object",
+          "properties": {
+            "department": { "type": "string" }
+          },
+          "required": ["department"]
+        }
+      ]
+    },
+    "offices": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/address" }
+    }
+  }
+}

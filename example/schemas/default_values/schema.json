@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/default-values",
+  "title": "Default Values Example",
+  "description": "Demonstrates default value handling",
+  "type": "object",
+  "properties": {
+    "port": {
+      "type": "integer",
+      "default": 8080,
+      "description": "Server port"
+    },
+    "host": {
+      "type": "string",
+      "default": "localhost",
+      "description": "Server host"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["default"]
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "timeout": { "type": "integer", "default": 30 }
+      },
+      "default": {}
+    }
+  }
+}

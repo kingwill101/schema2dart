@@ -76,8 +76,31 @@ class SchemaGenerator {
 
     for (final union in ir.unions) {
       final baseFile = '${_Naming.fileNameFromType(union.baseClass.name)}.dart';
+      // Map base class to its file
+      fileNameByType[union.baseClass.name] = baseFile;
+      // Map variants to base file
       for (final variant in union.variants) {
         fileNameByType[variant.classSpec.name] = baseFile;
+      }
+    }
+
+    // Map enums to their files
+    for (final enumeration in ir.enums) {
+      final fileName = '${_Naming.fileNameFromType(enumeration.name)}.dart';
+      fileNameByType[enumeration.name] = fileName;
+    }
+
+    // Map mixed enums to their files
+    for (final mixedEnum in ir.mixedEnums) {
+      final fileName = '${_Naming.fileNameFromType(mixedEnum.name)}.dart';
+      fileNameByType[mixedEnum.name] = fileName;
+    }
+
+    // Map regular classes to their files (those not already mapped as union variants)
+    for (final klass in ir.classes) {
+      if (!fileNameByType.containsKey(klass.name)) {
+        final fileName = '${_Naming.fileNameFromType(klass.name)}.dart';
+        fileNameByType[klass.name] = fileName;
       }
     }
 
@@ -104,13 +127,52 @@ class SchemaGenerator {
           unionVariants: unionVariantLookup,
         ).where((type) => !variantNames.contains(type)).toSet();
 
-        for (final variant in variantClasses) {
+        // Separate class variants from enum/mixed enum variants and existing sealed classes
+        final classVariants = <IrClass>[];
+        final enumVariantNames = <String>{};
+        final allEnumNames = {
+          ...ir.enums.map((e) => e.name),
+          ...ir.mixedEnums.map((e) => e.name),
+        };
+
+        for (var i = 0; i < variantClasses.length; i++) {
+          final variant = variantClasses[i];
+          final variantSpec = union.variants[i];
+          final variantName = variant.name;
+          
+          // Collect dependencies from ALL variants regardless of type
           final variantDeps = _dependenciesForClass(
             variant,
             unionByBase: unionByBase,
             unionVariants: unionVariantLookup,
           ).where((type) => type != klass.name && !variantNames.contains(type));
           dependencies.addAll(variantDeps);
+          
+          // Also collect from primitive type if this is a primitive wrapper
+          if (variantSpec.primitiveType != null) {
+            final primDeps = <String>{};
+            _collectTypeDependencies(
+              variantSpec.primitiveType!,
+              primDeps,
+              owner: klass.name,
+              unionVariants: unionVariantLookup,
+            );
+            dependencies.addAll(primDeps.where((type) => !variantNames.contains(type)));
+          }
+          
+          // If variant is an enum, import it
+          if (allEnumNames.contains(variantName)) {
+            enumVariantNames.add(variantName);
+            dependencies.add(variantName); // Add enum as dependency to be imported
+          } 
+          // If variant is itself a sealed base class from another union, import it
+          else if (unionByBase.containsKey(variantName)) {
+            dependencies.add(variantName); // Import the sealed base class
+          }
+          // Otherwise it's a class variant specific to this union, use as part
+          else {
+            classVariants.add(variant);
+          }
         }
 
         final content = StringBuffer()
@@ -122,14 +184,13 @@ class SchemaGenerator {
               currentFile: fileName,
             ),
           );
-        for (final variant in variantClasses) {
-          final partFile = '${_Naming.fileNameFromType(variant.name)}.dart';
-          content.writeln("part '$partFile';");
-        }
-        if (variantClasses.isNotEmpty) {
-          content.writeln();
-        }
+        // Render the sealed base class
         content.write(emitter.renderClass(klass));
+        // Render all class variants directly in the same file
+        for (final variant in classVariants) {
+          content.write(emitter.renderClass(variant));
+          emittedClasses.add(variant.name);
+        }
         files[fileName] = content.toString();
         emittedClasses.add(klass.name);
         continue;
@@ -137,16 +198,7 @@ class SchemaGenerator {
 
       final variantUnion = unionVariantLookup[klass.name];
       if (variantUnion != null) {
-        final baseFile =
-            '${_Naming.fileNameFromType(variantUnion.baseClass.name)}.dart';
-        final content = StringBuffer()
-          ..write(_buildHeader())
-          ..writeln("part of '$baseFile';")
-          ..writeln()
-          ..write(emitter.renderClass(klass));
-        files[fileName] = content.toString();
-        partFiles.add(fileName);
-        emittedClasses.add(klass.name);
+        // Skip - variants are already emitted with their base class
         continue;
       }
 
@@ -254,7 +306,7 @@ class SchemaGenerator {
   }) {
     final collected = <String>{};
     for (final property in klass.properties) {
-      _collectTypeDependencies(property.typeRef, collected, owner: klass.name);
+      _collectTypeDependencies(property.typeRef, collected, owner: klass.name, unionVariants: unionVariants);
     }
 
     final additionalField = klass.additionalPropertiesField;
@@ -263,6 +315,7 @@ class SchemaGenerator {
         additionalField.valueType,
         collected,
         owner: klass.name,
+        unionVariants: unionVariants,
       );
     }
 
@@ -272,6 +325,7 @@ class SchemaGenerator {
         unevaluatedField.valueType,
         collected,
         owner: klass.name,
+        unionVariants: unionVariants,
       );
     }
 
@@ -281,16 +335,17 @@ class SchemaGenerator {
         patternField.valueType,
         collected,
         owner: klass.name,
+        unionVariants: unionVariants,
       );
       for (final matcher in patternField.matchers) {
-        _collectTypeDependencies(matcher.typeRef, collected, owner: klass.name);
+        _collectTypeDependencies(matcher.typeRef, collected, owner: klass.name, unionVariants: unionVariants);
       }
     }
 
     for (final constraint in klass.dependentSchemas.values) {
       final ref = constraint.typeRef;
       if (ref != null) {
-        _collectTypeDependencies(ref, collected, owner: klass.name);
+        _collectTypeDependencies(ref, collected, owner: klass.name, unionVariants: unionVariants);
       }
     }
 
@@ -317,10 +372,18 @@ class SchemaGenerator {
     TypeRef ref,
     Set<String> out, {
     required String owner,
+    Map<String, IrUnion>? unionVariants,
   }) {
     if (ref is ObjectTypeRef) {
-      final name = ref.spec.name;
+      var name = ref.spec.name;
       if (name != owner) {
+        // If this type is a variant of a union, depend on the base class instead
+        if (unionVariants != null) {
+          final variantUnion = unionVariants[name];
+          if (variantUnion != null) {
+            name = variantUnion.baseClass.name;
+          }
+        }
         out.add(name);
       }
     } else if (ref is EnumTypeRef) {
@@ -331,17 +394,17 @@ class SchemaGenerator {
         out.add(helper);
       }
     } else if (ref is ListTypeRef) {
-      _collectTypeDependencies(ref.itemType, out, owner: owner);
+      _collectTypeDependencies(ref.itemType, out, owner: owner, unionVariants: unionVariants);
       for (final type in ref.prefixItemTypes) {
-        _collectTypeDependencies(type, out, owner: owner);
+        _collectTypeDependencies(type, out, owner: owner, unionVariants: unionVariants);
       }
       final containsType = ref.containsType;
       if (containsType != null) {
-        _collectTypeDependencies(containsType, out, owner: owner);
+        _collectTypeDependencies(containsType, out, owner: owner, unionVariants: unionVariants);
       }
       final unevaluatedItemsType = ref.unevaluatedItemsType;
       if (unevaluatedItemsType != null) {
-        _collectTypeDependencies(unevaluatedItemsType, out, owner: owner);
+        _collectTypeDependencies(unevaluatedItemsType, out, owner: owner, unionVariants: unionVariants);
       }
     }
   }
@@ -663,6 +726,10 @@ class _SchemaEmitter {
       _writeDocumentation(buffer, klass.description!);
     }
 
+    // Check if union contains any primitive variants
+    final hasPrimitiveVariants = union.variants.any((v) => v.isPrimitive);
+    final hasObjectVariants = union.variants.any((v) => !v.isPrimitive);
+
     buffer.writeln('sealed class ${klass.name} {');
     buffer.writeln('  const ${klass.name}();');
     buffer.writeln();
@@ -672,116 +739,163 @@ class _SchemaEmitter {
       );
       buffer.writeln();
     }
+    
+    // Use dynamic parameter if we have primitive variants
+    final paramType = hasPrimitiveVariants ? 'dynamic' : 'Map<String, dynamic>';
     buffer.writeln(
-      '  factory ${klass.name}.fromJson(Map<String, dynamic> json) {',
+      '  factory ${klass.name}.fromJson($paramType json) {',
     );
 
-    final discriminator = union.discriminator;
-    if (discriminator != null && discriminator.mapping.isNotEmpty) {
-      buffer.writeln(
-        "    final discriminator = json['${discriminator.propertyName}'];",
-      );
-      buffer.writeln('    if (discriminator is String) {');
-      buffer.writeln('      switch (discriminator) {');
-      for (final entry in discriminator.mapping.entries) {
-        final variant = union.variants.firstWhereOrNull(
-          (candidate) => candidate.discriminatorValue == entry.key,
-        );
-        if (variant == null) {
-          continue;
+    // For unions with primitive variants, try runtime type checking first
+    if (hasPrimitiveVariants) {
+      for (final variant in union.variants.where((v) => v.isPrimitive)) {
+        final primitiveType = variant.primitiveType!;
+        if (primitiveType is PrimitiveTypeRef) {
+          switch (primitiveType.typeName) {
+            case 'Null':
+              buffer.writeln('    if (json == null) return ${variant.classSpec.name}(null);');
+            case 'String':
+              buffer.writeln('    if (json is String) return ${variant.classSpec.name}(json);');
+            case 'int':
+              buffer.writeln('    if (json is int) return ${variant.classSpec.name}(json);');
+            case 'num':
+            case 'double':
+              buffer.writeln('    if (json is num) return ${variant.classSpec.name}(json);');
+            case 'bool':
+              buffer.writeln('    if (json is bool) return ${variant.classSpec.name}(json);');
+          }
         }
-        buffer.writeln('        case ${_stringLiteral(entry.key)}:');
-        buffer.writeln(
-          '          return ${variant.classSpec.name}.fromJson(json);',
-        );
       }
-      buffer.writeln('      }');
-      buffer.writeln('    }');
-    }
-
-    buffer.writeln('    final keys = json.keys.toSet();');
-    buffer.writeln('    final sortedKeys = keys.toList()..sort();');
-
-    final constVariants = union.variants
-        .where((variant) => variant.constProperties.isNotEmpty)
-        .toList();
-    if (constVariants.isNotEmpty) {
-      buffer.writeln(
-        '    final constMatches = <${klass.name} Function(Map<String, dynamic>)>[];',
-      );
-      buffer.writeln("    final constMatchNames = <String>[];");
-      for (final variant in constVariants) {
-        final conditions = variant.constProperties.entries
-            .map((entry) {
-              final literal = _literalExpression(entry.value);
-              return "json['${entry.key}'] == $literal";
-            })
-            .join(' && ');
-        buffer.writeln('    if ($conditions) {');
+      
+      // If we have object variants, check if json is a Map
+      if (hasObjectVariants) {
+        buffer.writeln('    if (json is! Map<String, dynamic>) {');
         buffer.writeln(
-          '      constMatches.add(${variant.classSpec.name}.fromJson);',
-        );
-        buffer.writeln(
-          "      constMatchNames.add('${variant.classSpec.name}');",
+          "      throw ArgumentError('Invalid ${klass.name} value: \${json.runtimeType}');",
         );
         buffer.writeln('    }');
       }
-      buffer.writeln('    if (constMatches.length == 1) {');
-      buffer.writeln('      return constMatches.single(json);');
-      buffer.writeln('    }');
-      buffer.writeln('    if (constMatches.length > 1) {');
-      buffer.writeln(
-        "      throw ArgumentError('Ambiguous ${klass.name} variant matched const heuristics: \${constMatchNames.join(', ')}');",
-      );
-      buffer.writeln('    }');
     }
 
-    final requiredVariants = union.variants
-        .where((variant) => variant.requiredProperties.isNotEmpty)
-        .toList();
-    if (requiredVariants.isNotEmpty) {
-      buffer.writeln(
-        '    final requiredMatches = <${klass.name} Function(Map<String, dynamic>)>[];',
-      );
-      buffer.writeln("    final requiredMatchNames = <String>[];");
-      for (final variant in requiredVariants) {
-        final conditions = variant.requiredProperties
-            .map((prop) {
-              return "keys.contains('$prop')";
-            })
-            .join(' && ');
-        buffer.writeln('    if ($conditions) {');
+    // Handle object variants with discriminator
+    if (hasObjectVariants) {
+      final discriminator = union.discriminator;
+      if (discriminator != null && discriminator.mapping.isNotEmpty) {
         buffer.writeln(
-          '      requiredMatches.add(${variant.classSpec.name}.fromJson);',
+          "    final discriminator = json['${discriminator.propertyName}'];",
         );
-        buffer.writeln(
-          "      requiredMatchNames.add('${variant.classSpec.name}');",
-        );
+        buffer.writeln('    if (discriminator is String) {');
+        buffer.writeln('      switch (discriminator) {');
+        for (final entry in discriminator.mapping.entries) {
+          final variant = union.variants.firstWhereOrNull(
+            (candidate) => candidate.discriminatorValue == entry.key,
+          );
+          if (variant == null) {
+            continue;
+          }
+          buffer.writeln('        case ${_stringLiteral(entry.key)}:');
+          buffer.writeln(
+            '          return ${variant.classSpec.name}.fromJson(json);',
+          );
+        }
+        buffer.writeln('      }');
         buffer.writeln('    }');
       }
-      buffer.writeln('    if (requiredMatches.length == 1) {');
-      buffer.writeln('      return requiredMatches.single(json);');
-      buffer.writeln('    }');
-      buffer.writeln('    if (requiredMatches.length > 1) {');
-      buffer.writeln(
-        "      throw ArgumentError('Ambiguous ${klass.name} variant matched required-property heuristics: \${requiredMatchNames.join(', ')}');",
-      );
-      buffer.writeln('    }');
-    }
 
-    if (union.variants.length == 1) {
-      buffer.writeln(
-        '    return ${union.variants.single.classSpec.name}.fromJson(json);',
-      );
-    } else {
-      buffer.writeln(
-        "    throw ArgumentError('No ${klass.name} variant matched heuristics (keys: \${sortedKeys.join(', ')}).');",
-      );
-    }
+      buffer.writeln('    final keys = json.keys.toSet();');
+      buffer.writeln('    final sortedKeys = keys.toList()..sort();');
+
+      // Only process const/required variants for object variants
+      final constVariants = union.variants
+          .where((variant) => !variant.isPrimitive && variant.constProperties.isNotEmpty)
+          .toList();
+      if (constVariants.isNotEmpty) {
+        buffer.writeln(
+          '    final constMatches = <${klass.name} Function(Map<String, dynamic>)>[];',
+        );
+        buffer.writeln("    final constMatchNames = <String>[];");
+        for (final variant in constVariants) {
+          final conditions = variant.constProperties.entries
+              .map((entry) {
+                final literal = _literalExpression(entry.value);
+                return "json['${entry.key}'] == $literal";
+              })
+              .join(' && ');
+          buffer.writeln('    if ($conditions) {');
+          buffer.writeln(
+            '      constMatches.add(${variant.classSpec.name}.fromJson);',
+          );
+          buffer.writeln(
+            "      constMatchNames.add('${variant.classSpec.name}');",
+          );
+          buffer.writeln('    }');
+        }
+        buffer.writeln('    if (constMatches.length == 1) {');
+        buffer.writeln('      return constMatches.single(json);');
+        buffer.writeln('    }');
+        buffer.writeln('    if (constMatches.length > 1) {');
+        buffer.writeln(
+            "      throw ArgumentError('Ambiguous ${klass.name} variant matched const heuristics: \${constMatchNames.join(', ')}');",
+          );
+          buffer.writeln('    }');
+        }
+
+        final requiredVariants = union.variants
+            .where((variant) => !variant.isPrimitive && variant.requiredProperties.isNotEmpty)
+            .toList();
+        if (requiredVariants.isNotEmpty) {
+          buffer.writeln(
+            '    final requiredMatches = <${klass.name} Function(Map<String, dynamic>)>[];',
+          );
+          buffer.writeln("    final requiredMatchNames = <String>[];");
+          for (final variant in requiredVariants) {
+            final conditions = variant.requiredProperties
+                .map((prop) {
+                  return "keys.contains('$prop')";
+                })
+                .join(' && ');
+            buffer.writeln('    if ($conditions) {');
+            buffer.writeln(
+              '      requiredMatches.add(${variant.classSpec.name}.fromJson);',
+            );
+            buffer.writeln(
+              "      requiredMatchNames.add('${variant.classSpec.name}');",
+            );
+            buffer.writeln('    }');
+          }
+          buffer.writeln('    if (requiredMatches.length == 1) {');
+          buffer.writeln('      return requiredMatches.single(json);');
+          buffer.writeln('    }');
+          buffer.writeln('    if (requiredMatches.length > 1) {');
+          buffer.writeln(
+            "      throw ArgumentError('Ambiguous ${klass.name} variant matched required-property heuristics: \${requiredMatchNames.join(', ')}');",
+          );
+          buffer.writeln('    }');
+        }
+
+        final objectVariants = union.variants.where((v) => !v.isPrimitive).toList();
+        if (objectVariants.length == 1) {
+          buffer.writeln(
+            '    return ${objectVariants.single.classSpec.name}.fromJson(json);',
+          );
+        } else if (objectVariants.isNotEmpty) {
+          buffer.writeln(
+            "    throw ArgumentError('No ${klass.name} variant matched heuristics (keys: \${sortedKeys.join(', ')}).');",
+          );
+        }
+      } else {
+        // No object variants, only primitives  - should not reach here due to early returns
+        buffer.writeln(
+          "    throw ArgumentError('Invalid ${klass.name} value type: \${json.runtimeType}');",
+        );
+      }
 
     buffer.writeln('  }');
     buffer.writeln();
-    buffer.writeln('  Map<String, dynamic> toJson();');
+    
+    // Use dynamic return type if we have primitive variants
+    final returnType = hasPrimitiveVariants ? 'dynamic' : 'Map<String, dynamic>';
+    buffer.writeln('  $returnType toJson();');
     buffer.writeln('}');
     return buffer.toString();
   }
@@ -797,27 +911,44 @@ class _SchemaEmitter {
     }
 
     buffer.writeln('class ${klass.name} extends ${union.baseClass.name} {');
-    _writeFieldDeclarations(buffer, klass);
-    buffer.writeln();
-    _writeConstructor(buffer, klass, superInitializer: ': super()');
-    buffer.writeln();
-    _writeFromJson(buffer, klass);
-    buffer.writeln();
-    _writeToJson(
-      buffer,
-      klass,
-      override: true,
-      discriminatorKey: union.discriminator?.propertyName,
-      discriminatorValue: variant.discriminatorValue,
-    );
-    final needsValidation = _classNeedsValidation(klass, options);
-    if (needsValidation) {
-      _validatedClassNames.add(klass.name);
-    }
-    if (options.emitValidationHelpers) {
+    
+    // Handle primitive variants
+    if (variant.isPrimitive) {
+      final primitiveType = variant.primitiveType!;
+      final dartType = primitiveType.dartType();
+      
+      // Add value field for primitive wrapper
+      buffer.writeln('  final $dartType value;');
       buffer.writeln();
-      _writeValidate(buffer, klass, override: true);
+      buffer.writeln('  const ${klass.name}(this.value) : super();');
+      buffer.writeln();
+      buffer.writeln('  @override');
+      buffer.writeln('  dynamic toJson() => value;');
+    } else {
+      // Handle object variants (existing logic)
+      _writeFieldDeclarations(buffer, klass);
+      buffer.writeln();
+      _writeConstructor(buffer, klass, superInitializer: ': super()');
+      buffer.writeln();
+      _writeFromJson(buffer, klass);
+      buffer.writeln();
+      _writeToJson(
+        buffer,
+        klass,
+        override: true,
+        discriminatorKey: union.discriminator?.propertyName,
+        discriminatorValue: variant.discriminatorValue,
+      );
+      final needsValidation = _classNeedsValidation(klass, options);
+      if (needsValidation) {
+        _validatedClassNames.add(klass.name);
+      }
+      if (options.emitValidationHelpers) {
+        buffer.writeln();
+        _writeValidate(buffer, klass, override: true);
+      }
     }
+    
     buffer.writeln('}');
     return buffer.toString();
   }

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/string-formats",
+  "title": "String Formats Example",
+  "description": "Demonstrates string format validation",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "uri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "time": {
+      "type": "string",
+      "format": "time"
+    },
+    "ipv4": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "ipv6": {
+      "type": "string",
+      "format": "ipv6"
+    },
+    "hostname": {
+      "type": "string",
+      "format": "hostname"
+    },
+    "patternString": {
+      "type": "string",
+      "pattern": "^[A-Z][a-z]+$",
+      "description": "Must start with uppercase letter followed by lowercase"
+    }
+  }
+}

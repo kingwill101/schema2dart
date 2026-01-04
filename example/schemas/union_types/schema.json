@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/union-types",
+  "title": "Union Types Example",
+  "description": "Demonstrates various union type patterns",
+  "type": "object",
+  "properties": {
+    "simpleUnion": {
+      "type": ["string", "number"],
+      "description": "Can be string or number"
+    },
+    "complexUnion": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": { "const": "circle" },
+            "radius": { "type": "number" }
+          },
+          "required": ["kind", "radius"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": { "const": "rectangle" },
+            "width": { "type": "number" },
+            "height": { "type": "number" }
+          },
+          "required": ["kind", "width", "height"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": { "const": "triangle" },
+            "base": { "type": "number" },
+            "height": { "type": "number" }
+          },
+          "required": ["kind", "base", "height"]
+        }
+      ],
+      "description": "Discriminated union using kind field"
+    }
+  }
+}

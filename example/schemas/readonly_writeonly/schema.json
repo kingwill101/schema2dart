@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/readonly-writeonly",
+  "title": "ReadOnly/WriteOnly Example",
+  "description": "Demonstrates readOnly and writeOnly properties",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "readOnly": true,
+      "description": "Auto-generated ID, cannot be set"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "readOnly": true
+    },
+    "password": {
+      "type": "string",
+      "writeOnly": true,
+      "description": "Password for user, never returned in responses"
+    },
+    "name": {
+      "type": "string",
+      "description": "Regular property, can be read and written"
+    }
+  },
+  "required": ["name"]
+}

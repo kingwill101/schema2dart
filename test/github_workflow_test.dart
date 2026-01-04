@@ -33,8 +33,7 @@ void main() {
 
     test('exposes job union variants with heuristic discrimination', () {
       final union = ir.unions.firstWhere(
-        (entry) =>
-            entry.baseClass.name == 'GithubWorkflowJobsPatternProperty1',
+        (entry) => entry.baseClass.name == 'GithubWorkflowJobsPatternProperty1',
       );
       final variantNames = union.variants
           .map((variant) => variant.classSpec.name)
@@ -78,17 +77,15 @@ void main() {
     test('supports building strongly typed workflow instances', () {
       final workflow = model.GithubWorkflow(
         name: 'CI',
-        on: const {
-          'workflow_dispatch': null,
-          'push': {
-            'branches': ['main'],
-          },
-        },
+        on_: model.GithubWorkflowOnObject(
+          workflowDispatch: null,
+          push: model.RootSchemaOnPush(branches: ["main"]),
+        ),
         jobs: model.GithubWorkflowJobs(
           patternProperties: {
             'build': model.NormalJob(
-              runsOn: 'ubuntu-latest',
-              steps: const [
+              runsOn: model.NormalJobRunsOnString('ubuntu-latest'),
+              steps: [
                 model.Step(name: 'Checkout', uses: 'actions/checkout@v4'),
                 model.Step(name: 'Install dependencies', run: 'dart pub get'),
                 model.Step(name: 'Analyze', run: 'dart analyze'),
@@ -102,11 +99,11 @@ void main() {
         ),
         defaults: const model.Defaults(),
         env: const {'CI': 'true'},
-        permissions: const {'contents': 'read'},
-        concurrency: const {
-          'group': 'ci-\${{ github.ref }}',
-          'cancel-in-progress': true,
-        },
+        permissions: model.PermissionsObject(contents: model.PermissionsObjectActions.read),
+        concurrency: model.GithubWorkflowConcurrency(
+          group: 'ci-\${{ github.ref }}',
+          cancelInProgress: model.ConcurrencyCancelInProgressBool(true),
+        ),
         runName: 'CI for \${{ github.ref }}',
       );
 

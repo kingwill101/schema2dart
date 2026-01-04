@@ -215,6 +215,7 @@ class IrUnionVariant {
     this.discriminatorValue,
     required this.requiredProperties,
     required this.constProperties,
+    this.primitiveType,
   });
 
   final String schemaPointer;
@@ -222,6 +223,10 @@ class IrUnionVariant {
   final String? discriminatorValue;
   final Set<String> requiredProperties;
   final Map<String, Object?> constProperties;
+  final TypeRef? primitiveType;
+  
+  /// Returns true if this variant represents a primitive type (not an object)
+  bool get isPrimitive => primitiveType != null;
 }
 
 /// Metadata describing a discriminator mapping.

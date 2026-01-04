@@ -46,5 +46,14 @@ class NormalJobServices {
     return map;
   }
 
-  void validate({String pointer = '', ValidationContext? context}) {}
+  void validate({String pointer = '', ValidationContext? context}) {
+    final _additionalPropertiesMap = additionalProperties;
+    if (_additionalPropertiesMap != null) {
+      _additionalPropertiesMap.forEach((key, value) {
+        final itemPointer = appendJsonPointer(pointer, key);
+        context?.markProperty(pointer, key);
+        value.validate(pointer: itemPointer, context: context);
+      });
+    }
+  }
 }

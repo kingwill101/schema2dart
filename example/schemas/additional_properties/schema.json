@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/additional-properties",
+  "title": "Additional Properties Example",
+  "description": "Demonstrates additionalProperties handling",
+  "type": "object",
+  "properties": {
+    "strictObject": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "flexibleObject": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" }
+      },
+      "additionalProperties": true
+    },
+    "typedAdditional": {
+      "type": "object",
+      "properties": {
+        "baseField": { "type": "string" }
+      },
+      "additionalProperties": {
+        "type": "number"
+      }
+    }
+  }
+}

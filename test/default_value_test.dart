@@ -2,7 +2,7 @@ import 'package:schema2model/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('default values appear in constructors', () {
+  test('default values for primitives appear in constructors', () {
     const schema = {
       'type': 'object',
       'properties': {
@@ -47,6 +47,50 @@ void main() {
     expect(
       output,
       contains("final done = (json['done'] as bool?) ?? false;"),
+    );
+  });
+
+  test('default values for arrays and objects', () {
+    const schema = {
+      'type': 'object',
+      'properties': {
+        'tags': {
+          'type': 'array',
+          'items': {'type': 'string'},
+          'default': ['a', 'b', 'c'],
+        },
+        'config': {
+          'type': 'object',
+          'default': {'key': 'value', 'count': 42},
+        },
+        'name': {
+          'type': 'string',
+          'default': 'default-name',
+        },
+      },
+    };
+
+    final generator = SchemaGenerator(
+      options: const SchemaGeneratorOptions(),
+    );
+    final output = generator.generate(schema);
+
+    // Check array default in constructor
+    expect(
+      output,
+      contains("this.tags = const ['a', 'b', 'c']"),
+    );
+
+    // Check object default in constructor
+    expect(
+      output,
+      contains("this.config = const {'key': 'value', 'count': 42}"),
+    );
+
+    // Check string default in constructor
+    expect(
+      output,
+      contains("this.name = 'default-name'"),
     );
   });
 }

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/allof-example",
+  "title": "AllOf Example",
+  "description": "Demonstrates allOf composition",
+  "type": "object",
+  "properties": {
+    "person": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "age": { "type": "integer" }
+          },
+          "required": ["name"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "email": { "type": "string", "format": "email" },
+            "phone": { "type": "string" }
+          },
+          "required": ["email"]
+        }
+      ]
+    }
+  }
+}

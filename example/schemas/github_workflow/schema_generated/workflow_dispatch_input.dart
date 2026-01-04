@@ -14,9 +14,10 @@ class WorkflowDispatchInput {
   /// A string description of the input parameter.
   final String description;
   /// The options of the dropdown list, if the type is a choice.
+  /// Constraints: minItems: 1
   final List<String>? options;
   /// A boolean to indicate whether the action requires the input parameter. Set to true when the parameter is required.
-  final bool? required;
+  final bool? required_;
   /// A string representing the type of the input.
   final WorkflowDispatchInputType? type;
 
@@ -25,7 +26,7 @@ class WorkflowDispatchInput {
     this.deprecationMessage,
     required this.description,
     this.options,
-    this.required,
+    this.required_,
     this.type,
   });
 
@@ -39,7 +40,7 @@ class WorkflowDispatchInput {
     remaining.remove('description');
     final options = json['options'] == null ? null : (json['options'] as List).map((e) => e as String).toList();
     remaining.remove('options');
-    final required = json['required'] as bool?;
+    final required_ = json['required'] as bool?;
     remaining.remove('required');
     final type = json['type'] == null ? null : WorkflowDispatchInputTypeJson.fromJson(json['type'] as String);
     remaining.remove('type');
@@ -53,7 +54,7 @@ class WorkflowDispatchInput {
       deprecationMessage: deprecationMessage,
       description: description,
       options: options,
-      required: required,
+      required_: required_,
       type: type,
     );
   }
@@ -64,10 +65,39 @@ class WorkflowDispatchInput {
     if (deprecationMessage != null) map['deprecationMessage'] = deprecationMessage;
     map['description'] = description;
     if (options != null) map['options'] = options;
-    if (required != null) map['required'] = required;
+    if (required_ != null) map['required'] = required_;
     if (type != null) map['type'] = type!.toJson();
     return map;
   }
 
-  void validate({String pointer = '', ValidationContext? context}) {}
+  void validate({String pointer = '', ValidationContext? context}) {
+    final _ptr0 = appendJsonPointer(pointer, 'default');
+    final _value0 = default_;
+    if (_value0 != null) {
+      context?.markProperty(pointer, 'default');
+    }
+    final _ptr1 = appendJsonPointer(pointer, 'deprecationMessage');
+    final _value1 = deprecationMessage;
+    if (_value1 != null) {
+      context?.markProperty(pointer, 'deprecationMessage');
+    }
+    final _ptr2 = appendJsonPointer(pointer, 'description');
+    final _value2 = description;
+    context?.markProperty(pointer, 'description');
+    final _ptr3 = appendJsonPointer(pointer, 'options');
+    final _value3 = options;
+    if (_value3 != null) {
+      context?.markProperty(pointer, 'options');
+    }
+    final _ptr4 = appendJsonPointer(pointer, 'required');
+    final _value4 = required_;
+    if (_value4 != null) {
+      context?.markProperty(pointer, 'required');
+    }
+    final _ptr5 = appendJsonPointer(pointer, 'type');
+    final _value5 = type;
+    if (_value5 != null) {
+      context?.markProperty(pointer, 'type');
+    }
+  }
 }

@@ -106,11 +106,14 @@ class _SchemaWalker {
   final List<_DynamicScopeEntry> _dynamicScope;
   final Set<Uri> _indexedDocuments;
   final Set<_SchemaCacheKey> _indexedLocations;
+  String? _rootClassName;
 
   SchemaIr build() {
     final rootLocation = _SchemaLocation(uri: _rootUri, pointer: '#');
     final rootDialect = _documentDialect(_rootUri);
     _log('Building IR starting at $_rootUri (dialect: ${rootDialect.uri})');
+    // Set root class name before processing to enable proper array item naming
+    _rootClassName = _Naming.className(_options.effectiveRootClassName);
     final root = _ensureRootClass(rootLocation, rootDialect);
     _processDefinitions(_rootSchema, rootLocation, rootDialect);
     final classes = _orderedClasses(root);
@@ -707,6 +710,8 @@ class _SchemaWalker {
         if (items is Map<String, dynamic>) {
           String? itemClassName;
           if (suggestedClassName != null) {
+            // For array items, singularize the full suggested name
+            // E.g., "RootSchemaItems" -> "RootSchemaItem"
             itemClassName = _elementClassName(suggestedClassName);
           }
           final itemPointer = _pointerChild(location.pointer, 'items');
@@ -759,7 +764,9 @@ class _SchemaWalker {
         if (containsRaw is Map<String, dynamic>) {
           String? containsClassName;
           if (suggestedClassName != null) {
-            containsClassName = _elementClassName(suggestedClassName);
+            // For contains, use singularized property name without parent prefix
+            final lastSegment = _extractPropertyName(suggestedClassName);
+            containsClassName = _elementClassName(lastSegment);
           }
           containsType = _resolveSchema(
             containsRaw,
@@ -1007,14 +1014,20 @@ class _SchemaWalker {
     }
 
     final cacheKey = _SchemaCacheKey(location.uri, location.pointer);
+    
+    // If not all objects, check if all primitives are the same type
     if (!allObjects) {
       final first = variantTypes.first;
       final same = variantTypes.every(
         (type) => type.identity == first.identity,
       );
-      final fallback = same ? first : const DynamicTypeRef();
-      _typeCache[cacheKey] = fallback;
-      return fallback;
+      // If all same primitive type, return that type
+      if (same) {
+        _typeCache[cacheKey] = first;
+        return first;
+      }
+      // Otherwise, generate sealed class for mixed primitive/object union
+      // Continue to sealed class generation below
     }
 
     final className = _allocateClassName(
@@ -1047,22 +1060,86 @@ class _SchemaWalker {
     for (var index = 0; index < variantTypes.length; index++) {
       final resolved = resolvedMembers[index];
       final typeRef = variantTypes[index];
-      if (typeRef is! ObjectTypeRef) {
-        continue;
+      
+      if (typeRef is ObjectTypeRef) {
+        // Handle object variants
+        final spec = typeRef.spec;
+        final requiredProperties = _requiredPropertiesFromSchema(resolved.schema);
+        final constProperties = _constPropertiesFromSchema(resolved.schema);
+        
+        // Check if this object variant needs to be renamed to avoid conflicts
+        // If the spec name doesn't already start with our sealed class name prefix, rename it
+        final needsRename = !spec.name.startsWith(className);
+        
+        if (needsRename) {
+          // Create a new uniquely-named variant class
+          final variantName = _allocateClassName('${className}Object');
+          final variantClass = IrClass(
+            name: variantName,
+            description: spec.description,
+            properties: spec.properties,
+            conditionals: spec.conditionals,
+            dependentRequired: spec.dependentRequired,
+            dependentSchemas: spec.dependentSchemas,
+            superClassName: baseClass.name,
+            extensionAnnotations: spec.extensionAnnotations,
+            additionalPropertiesField: spec.additionalPropertiesField,
+            patternPropertiesField: spec.patternPropertiesField,
+            propertyNamesConstraint: spec.propertyNamesConstraint,
+            unevaluatedPropertiesField: spec.unevaluatedPropertiesField,
+            allowAdditionalProperties: spec.allowAdditionalProperties,
+            disallowUnevaluatedProperties: spec.disallowUnevaluatedProperties,
+            conditionalConstraints: spec.conditionalConstraints,
+          );
+          _classes[variantName] = variantClass;
+          
+          variants.add(
+            IrUnionVariant(
+              schemaPointer: resolved.location.pointer,
+              classSpec: variantClass,
+              discriminatorValue: null,
+              requiredProperties: requiredProperties,
+              constProperties: constProperties,
+            ),
+          );
+        } else {
+          // Already has correct prefix, use as-is
+          spec.superClassName ??= baseClass.name;
+          variants.add(
+            IrUnionVariant(
+              schemaPointer: resolved.location.pointer,
+              classSpec: spec,
+              discriminatorValue: null,
+              requiredProperties: requiredProperties,
+              constProperties: constProperties,
+            ),
+          );
+        }
+      } else {
+        // Handle primitive variants (string, number, boolean, null)
+        final variantName = _allocateClassName('${className}${_getTypeName(typeRef)}');
+        final primitiveClass = IrClass(
+          name: variantName,
+          description: null,
+          properties: [],
+          conditionals: JsonConditionals(),
+          dependentRequired: {},
+          dependentSchemas: {},
+          superClassName: baseClass.name,
+        );
+        _classes[variantName] = primitiveClass;
+        
+        variants.add(
+          IrUnionVariant(
+            schemaPointer: resolved.location.pointer,
+            classSpec: primitiveClass,
+            discriminatorValue: null,
+            requiredProperties: {},
+            constProperties: {},
+            primitiveType: typeRef, // Store the primitive type
+          ),
+        );
       }
-      final spec = typeRef.spec;
-      spec.superClassName ??= baseClass.name;
-      final requiredProperties = _requiredPropertiesFromSchema(resolved.schema);
-      final constProperties = _constPropertiesFromSchema(resolved.schema);
-      variants.add(
-        IrUnionVariant(
-          schemaPointer: resolved.location.pointer,
-          classSpec: typeRef.spec,
-          discriminatorValue: null,
-          requiredProperties: requiredProperties,
-          constProperties: constProperties,
-        ),
-      );
     }
 
     final discriminator = _extractDiscriminator(schema);
@@ -1607,7 +1684,8 @@ class _SchemaWalker {
             ? propertySchema
             : null;
 
-        final suggestedName = '${spec.name}_$key';
+        // Use parent class name + property key as suggested name to avoid collisions
+        final suggestedName = '${spec.name}${_Naming.className(key)}';
         var propertyType = _resolveSchema(
           propertySchema,
           _SchemaLocation(uri: location.uri, pointer: propertyPointer),
@@ -1841,6 +1919,27 @@ class _SchemaWalker {
     return unique;
   }
 
+  /// Get a type name suffix for primitive union variants
+  String _getTypeName(TypeRef typeRef) {
+    if (typeRef is PrimitiveTypeRef) {
+      switch (typeRef.typeName) {
+        case 'String':
+          return 'String';
+        case 'int':
+          return 'Int';
+        case 'num':
+        case 'double':
+          return 'Num';
+        case 'bool':
+          return 'Bool';
+        case 'Null':
+          return 'Null';
+      }
+    }
+    if (typeRef is ListTypeRef) return 'Array';
+    return 'Value';
+  }
+
   String _allocateEnumName(String candidate) {
     final base = _Naming.className(
       candidate.isEmpty ? 'GeneratedEnum' : candidate,
@@ -1885,25 +1984,145 @@ class _SchemaWalker {
         .split('/')
         .map(_unescapePointerToken)
         .toList();
-    final relevant = segments.lastWhereOrNull((segment) {
-      // Filter out structural keywords
-      if (segment == 'properties' ||
-          segment == r'$defs' ||
-          segment == 'definitions' ||
-          segment == 'items') {
-        return false;
+    
+    // Track if we're directly under root properties
+    bool afterRootProperties = false;
+    int propertiesDepth = 0;
+    
+    // Collect relevant segments (property names, etc)
+    final relevantSegments = <String>[];
+    
+    for (var i = 0; i < segments.length; i++) {
+      final segment = segments[i];
+      
+      // Track properties depth
+      if (segment == 'properties') {
+        propertiesDepth++;
+        if (propertiesDepth == 1 && i == 0) {
+          afterRootProperties = true;
+        }
+        continue;
       }
-      // Filter out union keywords (oneOf, anyOf, allOf)
+      
+      // Skip other structural keywords
+      if (segment == r'$defs' || segment == 'definitions') {
+        continue;
+      }
+      
+      // Skip union keywords (oneOf, anyOf, allOf)
       if (segment == 'oneOf' || segment == 'anyOf' || segment == 'allOf') {
-        return false;
+        continue;
       }
-      // Filter out numeric array indices
+      
+      // Skip numeric array indices
       if (int.tryParse(segment) != null) {
-        return false;
+        continue;
       }
-      return true;
-    });
-    return relevant ?? 'Generated';
+      
+      // Special handling for 'items' - use parent property name with singularization
+      if (segment == 'items' && relevantSegments.isNotEmpty) {
+        final parentName = relevantSegments.last;
+        final singularized = _singularize(parentName);
+        if (singularized != parentName) {
+          // Replace parent name with singularized version
+          relevantSegments[relevantSegments.length - 1] = singularized;
+        }
+        continue;
+      }
+      
+      relevantSegments.add(segment);
+    }
+    
+    if (relevantSegments.isEmpty) {
+      return 'Generated';
+    }
+    
+    // If we're nested under root properties (like items array nested in root), 
+    // prefix with RootSchema
+    if (afterRootProperties && relevantSegments.length >= 1) {
+      return 'RootSchema${relevantSegments.map(_Naming.className).join()}';
+    }
+    
+    // For single segments at definitions level, don't prefix
+    if (relevantSegments.length == 1) {
+      return _Naming.className(relevantSegments.first);
+    }
+    
+    // For other nested classes, join all segments
+    return relevantSegments.map(_Naming.className).join();
+  }
+  
+  /// Extract the property name from a prefixed class name
+  /// E.g., "RootSchemaUsers" -> "Users", "PubspecEnvironment" -> "Environment"
+  String _extractPropertyName(String className) {
+    // Try to remove the root class prefix if it exists
+    final rootName = _rootClassName;
+    if (rootName != null && className.startsWith(rootName)) {
+      final withoutPrefix = className.substring(rootName.length);
+      if (withoutPrefix.isNotEmpty) {
+        return withoutPrefix;
+      }
+    }
+    return className;
+  }
+
+  /// Simple singularization rules for array item names
+  static String _singularize(String word) {
+    if (word.isEmpty) return word;
+    
+    // Common irregular plurals
+    final irregulars = {
+      'children': 'child',
+      'people': 'person',
+      'men': 'man',
+      'women': 'woman',
+      'feet': 'foot',
+      'teeth': 'tooth',
+      'mice': 'mouse',
+      'geese': 'goose',
+    };
+    
+    final lower = word.toLowerCase();
+    if (irregulars.containsKey(lower)) {
+      // Preserve original casing pattern
+      final singular = irregulars[lower]!;
+      if (word[0] == word[0].toUpperCase()) {
+        return singular[0].toUpperCase() + singular.substring(1);
+      }
+      return singular;
+    }
+    
+    // Rules for regular plurals
+    if (word.endsWith('ies') && word.length > 3) {
+      // entries -> entry, stories -> story
+      return '${word.substring(0, word.length - 3)}y';
+    }
+    if (word.endsWith('ves') && word.length > 3) {
+      // knives -> knife, wolves -> wolf
+      return '${word.substring(0, word.length - 3)}f';
+    }
+    if (word.endsWith('ses') && word.length > 3) {
+      // buses -> bus, cases -> case
+      return word.substring(0, word.length - 2);
+    }
+    if (word.endsWith('shes') && word.length > 4) {
+      // bushes -> bush
+      return word.substring(0, word.length - 2);
+    }
+    if (word.endsWith('ches') && word.length > 4) {
+      // matches -> match
+      return word.substring(0, word.length - 2);
+    }
+    if (word.endsWith('xes') && word.length > 3) {
+      // boxes -> box
+      return word.substring(0, word.length - 2);
+    }
+    if (word.endsWith('s') && word.length > 1 && !word.endsWith('ss')) {
+      // users -> user, items -> item (but not class -> clas)
+      return word.substring(0, word.length - 1);
+    }
+    
+    return word;
   }
 
   /// Extracts x-* extension annotations from a schema object.
@@ -2724,10 +2943,40 @@ class _SchemaWalker {
     if (title is String && title.trim().isNotEmpty) {
       return _Naming.className(title.trim());
     }
+    
+    // Check for discriminator value
+    if (schema != null && schema['properties'] is Map) {
+      final props = schema['properties'] as Map;
+      for (final prop in props.values) {
+        if (prop is Map && prop['const'] != null) {
+          final constValue = prop['const'];
+          if (constValue is String && constValue.trim().isNotEmpty) {
+            return _Naming.className(constValue.trim());
+          }
+        }
+      }
+    }
+    
+    // If the schema has a simple type, use the type name as suffix
+    // This should come BEFORE checking pointer name for union variants
+    if (schema != null && schema['type'] is String) {
+      final type = schema['type'] as String;
+      final typeSuffix = type[0].toUpperCase() + type.substring(1);
+      return '$baseName$typeSuffix';
+    }
+    
+    // For union variants without explicit type, don't use pointer name
+    // as it conflicts with the base class name. Use a descriptive suffix instead.
+    // This happens for object schemas without explicit type: "object"
+    if (schema != null && schema.containsKey('properties')) {
+      return '${baseName}Object';
+    }
+    
     final pointerName = _nameFromPointer(location.pointer);
-    if (pointerName.isNotEmpty && pointerName != 'Generated') {
+    if (pointerName.isNotEmpty && pointerName != 'Generated' && pointerName != baseName) {
       return _Naming.className(pointerName);
     }
+    
     return '${baseName}Variant${index + 1}';
   }
 
@@ -3151,18 +3400,14 @@ class ValidationError implements Exception {
 ''',
 );
 String _elementClassName(String base) {
-  final lower = base.toLowerCase();
-  if (lower.endsWith('ies') && base.length > 3) {
-    return '${base.substring(0, base.length - 3)}y';
+  // Use the improved singularize function
+  final singularized = _SchemaWalker._singularize(base);
+  
+  // Only add 'Item' suffix if singularization didn't change the word
+  // (meaning it wasn't a plural form)
+  if (singularized == base) {
+    return '${base}Item';
   }
-  const esEndings = ['sses', 'ches', 'shes', 'xes', 'zes'];
-  for (final ending in esEndings) {
-    if (lower.endsWith(ending) && base.length > ending.length) {
-      return base.substring(0, base.length - 2);
-    }
-  }
-  if (lower.endsWith('s') && base.length > 1) {
-    return base.substring(0, base.length - 1);
-  }
-  return '${base}Item';
+  
+  return singularized;
 }

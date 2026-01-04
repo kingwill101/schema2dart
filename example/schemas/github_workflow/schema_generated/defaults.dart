@@ -6,6 +6,7 @@ import 'defaults_run.dart';
 import 'validation_error.dart';
 
 class Defaults {
+  /// Constraints: minProperties: 1
   final DefaultsRun? run;
 
   const Defaults({
@@ -32,5 +33,11 @@ class Defaults {
     return map;
   }
 
-  void validate({String pointer = '', ValidationContext? context}) {}
+  void validate({String pointer = '', ValidationContext? context}) {
+    final _ptr0 = appendJsonPointer(pointer, 'run');
+    final _value0 = run;
+    if (_value0 != null) {
+      context?.markProperty(pointer, 'run');
+    }
+  }
 }

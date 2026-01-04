@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/nullable-types",
+  "title": "Nullable Types Example",
+  "description": "Demonstrates nullable field handling",
+  "type": "object",
+  "properties": {
+    "nullableString": {
+      "type": ["string", "null"],
+      "description": "A string that can be null"
+    },
+    "nullableNumber": {
+      "type": ["number", "null"],
+      "description": "A number that can be null"
+    },
+    "nullableObject": {
+      "type": ["object", "null"],
+      "properties": {
+        "name": { "type": "string" }
+      }
+    },
+    "nullableArray": {
+      "type": ["array", "null"],
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["nullableString"]
+}

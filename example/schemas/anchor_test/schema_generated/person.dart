@@ -5,6 +5,7 @@
 import 'validation_error.dart';
 
 class Person {
+  /// Constraints: minimum: 0
   final int? age;
   final String? email;
   /// The person's first name

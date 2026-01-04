@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/content-encoding",
+  "title": "Content Encoding Example",
+  "description": "Demonstrates contentEncoding and contentMediaType",
+  "type": "object",
+  "properties": {
+    "image": {
+      "type": "string",
+      "contentEncoding": "base64",
+      "contentMediaType": "image/png",
+      "description": "Base64 encoded PNG image"
+    },
+    "htmlContent": {
+      "type": "string",
+      "contentMediaType": "text/html",
+      "description": "HTML content"
+    },
+    "jsonData": {
+      "type": "string",
+      "contentEncoding": "base64",
+      "contentMediaType": "application/json",
+      "contentSchema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "age": { "type": "integer" }
+        }
+      },
+      "description": "Base64 encoded JSON"
+    },
+    "binaryData": {
+      "type": "string",
+      "contentEncoding": "base16",
+      "contentMediaType": "application/octet-stream"
+    }
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "test_cases": [
+    {
+      "name": "nested_objects",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "address": {
+                "type": "object",
+                "properties": {
+                  "street": { "type": "string" },
+                  "city": { "type": "string" }
+                },
+                "required": ["street", "city"]
+              }
+            },
+            "required": ["name", "address"]
+          }
+        }
+      }
+    },
+    {
+      "name": "array_of_objects",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "integer" },
+                "name": { "type": "string" }
+              },
+              "required": ["id", "name"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "union_types",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "value": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number" },
+              { "type": "boolean" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "anyOf_objects",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": { "const": "text" },
+                  "content": { "type": "string" }
+                },
+                "required": ["type", "content"]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": { "const": "number" },
+                  "value": { "type": "number" }
+                },
+                "required": ["type", "value"]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "allOf_composition",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "allOf": [
+          {
+            "properties": {
+              "name": { "type": "string" }
+            },
+            "required": ["name"]
+          },
+          {
+            "properties": {
+              "age": { "type": "integer" }
+            },
+            "required": ["age"]
+          }
+        ]
+      }
+    },
+    {
+      "name": "additional_properties",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "known": { "type": "string" }
+        },
+        "additionalProperties": {
+          "type": "number"
+        }
+      }
+    },
+    {
+      "name": "definitions_refs",
+      "schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "definitions": {
+          "address": {
+            "type": "object",
+            "properties": {
+              "street": { "type": "string" },
+              "city": { "type": "string" }
+            },
+            "required": ["street", "city"]
+          }
+        },
+        "type": "object",
+        "properties": {
+          "home": { "$ref": "#/definitions/address" },
+          "work": { "$ref": "#/definitions/address" }
+        }
+      }
+    }
+  ]
+}

@@ -145,6 +145,7 @@ sealed class Step {
 
 class Run extends Step {
   final String run;
+  /// Constraints: const: run
   final String type;
 
   const Run({
@@ -175,6 +176,7 @@ class Run extends Step {
 }
 
 class Uses extends Step {
+  /// Constraints: const: uses
   final String type;
   final String uses;
 

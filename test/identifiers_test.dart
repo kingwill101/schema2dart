@@ -153,7 +153,7 @@ void main() {
       final ir = generator.buildIr(documents['https://example.com/root']!);
       final root = ir.rootClass;
       final external =
-          root.properties.singleWhere((prop) => prop.fieldName == 'external');
+          root.properties.singleWhere((prop) => prop.fieldName == 'external_');
 
       expect(external.typeRef, isA<PrimitiveTypeRef>());
       expect((external.typeRef as PrimitiveTypeRef).typeName, 'String');
