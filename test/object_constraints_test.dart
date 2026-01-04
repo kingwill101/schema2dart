@@ -20,8 +20,8 @@ void main() {
       );
       final generated = generator.generate(schema);
 
-      expect(generated, contains('minProperties'));
-      expect(generated, contains('maxProperties'));
+      expect(generated, contains("throwValidationError(_ptr0, 'minProperties'"));
+      expect(generated, contains("throwValidationError(_ptr0, 'maxProperties'"));
     });
 
     test('handles additionalProperties with schema', () {

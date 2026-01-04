@@ -681,7 +681,7 @@ class _SchemaWalker {
                   ? '${suggestedClassName}Prefix$index'
                   : null;
               prefixItemTypes.add(
-                _resolveSchema(
+                _resolveSchemaWithValidation(
                   element,
                   pointerLocation,
                   suggestedClassName: nameSuffix,
@@ -715,7 +715,7 @@ class _SchemaWalker {
             itemClassName = _elementClassName(suggestedClassName);
           }
           final itemPointer = _pointerChild(location.pointer, 'items');
-          itemType = _resolveSchema(
+          itemType = _resolveSchemaWithValidation(
             items,
             _SchemaLocation(uri: location.uri, pointer: itemPointer),
             suggestedClassName: itemClassName,
@@ -739,7 +739,7 @@ class _SchemaWalker {
             );
             if (element is Map<String, dynamic>) {
               prefixItemTypes.add(
-                _resolveSchema(
+                _resolveSchemaWithValidation(
                   element,
                   pointerLocation,
                   suggestedClassName: suggestedClassName != null
@@ -768,7 +768,7 @@ class _SchemaWalker {
             final lastSegment = _extractPropertyName(suggestedClassName);
             containsClassName = _elementClassName(lastSegment);
           }
-          containsType = _resolveSchema(
+          containsType = _resolveSchemaWithValidation(
             containsRaw,
             _SchemaLocation(uri: location.uri, pointer: containsPointer),
             suggestedClassName: suggestedClassName != null
@@ -828,7 +828,7 @@ class _SchemaWalker {
             disallowUnevaluatedItems = true;
           }
         } else if (unevaluatedRaw is Map<String, dynamic>) {
-          unevaluatedItemsType = _resolveSchema(
+          unevaluatedItemsType = _resolveSchemaWithValidation(
             unevaluatedRaw,
             _SchemaLocation(uri: location.uri, pointer: unevaluatedPointer),
             suggestedClassName: suggestedClassName != null
@@ -843,9 +843,12 @@ class _SchemaWalker {
           );
         }
 
+        final normalizedContains = containsType is ValidatedTypeRef
+            ? containsType.inner
+            : containsType;
         final ref = ListTypeRef(
-          itemType: itemType is DynamicTypeRef && containsType != null
-              ? containsType
+          itemType: itemType is DynamicTypeRef && normalizedContains != null
+              ? normalizedContains
               : itemType,
           prefixItemTypes: prefixItemTypes,
           containsType: containsType,
@@ -869,6 +872,27 @@ class _SchemaWalker {
         _dynamicScope.removeLast();
       }
     }
+  }
+
+  TypeRef _resolveSchemaWithValidation(
+    Object? schema,
+    _SchemaLocation location, {
+    String? suggestedClassName,
+    SchemaDialect? dialect,
+  }) {
+    final typeRef = _resolveSchema(
+      schema,
+      location,
+      suggestedClassName: suggestedClassName,
+      dialect: dialect,
+    );
+    if (schema is Map<String, dynamic>) {
+      final rules = _extractValidationRules(schema);
+      if (rules != null && rules.hasRules) {
+        return ValidatedTypeRef(typeRef, rules);
+      }
+    }
+    return typeRef;
   }
 
   bool _isNullableComposition(Map<String, dynamic> schema) {
@@ -1060,6 +1084,10 @@ class _SchemaWalker {
     for (var index = 0; index < variantTypes.length; index++) {
       final resolved = resolvedMembers[index];
       final typeRef = variantTypes[index];
+      final originalMember = members[index];
+      final isReference =
+          originalMember is Map<String, dynamic> &&
+          originalMember.containsKey(r'$ref');
       
       if (typeRef is ObjectTypeRef) {
         // Handle object variants
@@ -1067,13 +1095,16 @@ class _SchemaWalker {
         final requiredProperties = _requiredPropertiesFromSchema(resolved.schema);
         final constProperties = _constPropertiesFromSchema(resolved.schema);
         
-        // Check if this object variant needs to be renamed to avoid conflicts
-        // If the spec name doesn't already start with our sealed class name prefix, rename it
-        final needsRename = !spec.name.startsWith(className);
-        
+        final existingBase = spec.superClassName;
+        final needsClone =
+            existingBase != null && existingBase != baseClass.name;
+        final needsRename =
+            needsClone || (!isReference && !spec.name.startsWith(className));
+
         if (needsRename) {
-          // Create a new uniquely-named variant class
-          final variantName = _allocateClassName('${className}Object');
+          final variantName = needsClone
+              ? _allocateClassName('$className${spec.name}')
+              : _allocateClassName('${className}Object');
           final variantClass = IrClass(
             name: variantName,
             description: spec.description,
@@ -1841,7 +1872,7 @@ class _SchemaWalker {
           continue;
         }
         if (value is Map<String, dynamic>) {
-          final typeRef = _resolveSchema(
+          final typeRef = _resolveSchemaWithValidation(
             value,
             _SchemaLocation(uri: location.uri, pointer: schemaPointer),
             suggestedClassName:
@@ -2267,7 +2298,7 @@ class _SchemaWalker {
         location.pointer,
         'additionalProperties',
       );
-      final typeRef = _resolveSchema(
+      final typeRef = _resolveSchemaWithValidation(
         additionalRaw,
         _SchemaLocation(uri: location.uri, pointer: additionalPointer),
         suggestedClassName: '${spec.name}AdditionalProperty',
@@ -2315,7 +2346,7 @@ class _SchemaWalker {
         _pointerChild(location.pointer, 'patternProperties'),
         pattern,
       );
-      final typeRef = _resolveSchema(
+      final typeRef = _resolveSchemaWithValidation(
         matcherSchema,
         _SchemaLocation(uri: location.uri, pointer: patternPointer),
         suggestedClassName: '${spec.name}PatternProperty$index',
@@ -2368,7 +2399,7 @@ class _SchemaWalker {
         usedFieldNames,
         'unevaluatedProperties',
       );
-      final typeRef = _resolveSchema(
+      final typeRef = _resolveSchemaWithValidation(
         node,
         _SchemaLocation(uri: location.uri, pointer: pointer),
         suggestedClassName: '${spec.name}UnevaluatedProperty',
@@ -2964,6 +2995,13 @@ class _SchemaWalker {
       final typeSuffix = type[0].toUpperCase() + type.substring(1);
       return '$baseName$typeSuffix';
     }
+
+    final pointerName = _nameFromPointer(location.pointer);
+    if (pointerName.isNotEmpty &&
+        pointerName != 'Generated' &&
+        pointerName != baseName) {
+      return _Naming.className(pointerName);
+    }
     
     // For union variants without explicit type, don't use pointer name
     // as it conflicts with the base class name. Use a descriptive suffix instead.
@@ -2971,12 +3009,7 @@ class _SchemaWalker {
     if (schema != null && schema.containsKey('properties')) {
       return '${baseName}Object';
     }
-    
-    final pointerName = _nameFromPointer(location.pointer);
-    if (pointerName.isNotEmpty && pointerName != 'Generated' && pointerName != baseName) {
-      return _Naming.className(pointerName);
-    }
-    
+
     return '${baseName}Variant${index + 1}';
   }
 
@@ -3330,11 +3363,15 @@ final Map<String, _FormatInfo> _formatRegistry = <String, _FormatInfo>{
 const IrHelper _validationHelper = IrHelper(
   name: 'ValidationError',
   code: '''
+import 'dart:convert';
+
 String appendJsonPointer(String pointer, String token) {
   final escaped = token.replaceAll('~', '~0').replaceAll('/', '~1');
   if (pointer.isEmpty) return '/' + escaped;
   return pointer + '/' + escaped;
 }
+
+String uniqueItemKey(Object? value) => jsonEncode(value);
 
 Never throwValidationError(String pointer, String keyword, String message) =>
     throw ValidationError(pointer: pointer, keyword: keyword, message: message);

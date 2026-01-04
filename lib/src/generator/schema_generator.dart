@@ -374,6 +374,15 @@ class SchemaGenerator {
     required String owner,
     Map<String, IrUnion>? unionVariants,
   }) {
+    if (ref is ValidatedTypeRef) {
+      _collectTypeDependencies(
+        ref.inner,
+        out,
+        owner: owner,
+        unionVariants: unionVariants,
+      );
+      return;
+    }
     if (ref is ObjectTypeRef) {
       var name = ref.spec.name;
       if (name != owner) {
@@ -1880,9 +1889,9 @@ class _SchemaEmitter {
   }) {
     final rules = property.validation;
     if (rules != null && rules.hasRules) {
-      _writeValidationRules(
+      _writeValidationRulesForType(
         buffer,
-        property,
+        property.typeRef,
         rules,
         valueVar,
         pointerVar,
@@ -1901,16 +1910,17 @@ class _SchemaEmitter {
     );
   }
 
-  void _writeValidationRules(
+  void _writeValidationRulesForType(
     StringBuffer buffer,
-    IrProperty property,
+    TypeRef ref,
     PropertyValidationRules rules,
     String valueVar,
     String pointerVar, {
     required String indent,
     required String suffix,
   }) {
-    if (rules.minLength != null && _isStringLike(property.typeRef)) {
+    final baseRef = _unwrapValidated(ref);
+    if (rules.minLength != null && _isStringLike(ref)) {
       buffer.writeln('${indent}if ($valueVar.length < ${rules.minLength}) {');
       final message = _stringLiteral(
         'Expected at least ${rules.minLength} characters but found ',
@@ -1921,7 +1931,7 @@ class _SchemaEmitter {
       buffer.writeln('$indent}');
     }
 
-    if (rules.maxLength != null && _isStringLike(property.typeRef)) {
+    if (rules.maxLength != null && _isStringLike(ref)) {
       buffer.writeln('${indent}if ($valueVar.length > ${rules.maxLength}) {');
       final message = _stringLiteral(
         'Expected at most ${rules.maxLength} characters but found ',
@@ -1932,7 +1942,7 @@ class _SchemaEmitter {
       buffer.writeln('$indent}');
     }
 
-    if (rules.minimum != null && _isNumericType(property.typeRef)) {
+    if (rules.minimum != null && _isNumericType(ref)) {
       final comparison = rules.exclusiveMinimum ? '<=' : '<';
       final keywordComparison = rules.exclusiveMinimum ? '>' : '>=';
       buffer.writeln('${indent}if ($valueVar $comparison ${rules.minimum}) {');
@@ -1945,7 +1955,7 @@ class _SchemaEmitter {
       buffer.writeln('$indent}');
     }
 
-    if (rules.maximum != null && _isNumericType(property.typeRef)) {
+    if (rules.maximum != null && _isNumericType(ref)) {
       final comparison = rules.exclusiveMaximum ? '>=' : '>';
       final keywordComparison = rules.exclusiveMaximum ? '<' : '<=';
       buffer.writeln('${indent}if ($valueVar $comparison ${rules.maximum}) {');
@@ -1958,7 +1968,22 @@ class _SchemaEmitter {
       buffer.writeln('$indent}');
     }
 
-    if (rules.pattern != null && _isStringLike(property.typeRef)) {
+    if (rules.multipleOf != null && _isNumericType(ref)) {
+      final remainderVar = '_remainder$suffix';
+      buffer.writeln(
+        '${indent}final $remainderVar = $valueVar % ${rules.multipleOf};',
+      );
+      buffer.writeln('${indent}if ($remainderVar != 0) {');
+      final message = _stringLiteral(
+        'Expected value to be a multiple of ${rules.multipleOf} but found ',
+      );
+      buffer.writeln(
+        '$indent  throwValidationError($pointerVar, \'multipleOf\', $message + $valueVar.toString() + \'.\');',
+      );
+      buffer.writeln('$indent}');
+    }
+
+    if (rules.pattern != null && _isStringLike(ref)) {
       final patternVar = '_pattern$suffix';
       buffer.writeln(
         '${indent}final $patternVar = RegExp(${_stringLiteral(rules.pattern!)});',
@@ -1974,7 +1999,7 @@ class _SchemaEmitter {
     }
 
     if (rules.constValue != null) {
-      final actualExpr = _constComparableExpression(property, valueVar);
+      final actualExpr = _constComparableExpressionForType(ref, valueVar);
       if (actualExpr != null) {
         final actualVar = '_actual$suffix';
         final expectedLiteral = _literalExpression(rules.constValue);
@@ -1985,6 +2010,79 @@ class _SchemaEmitter {
         );
         buffer.writeln(
           '$indent  throwValidationError($pointerVar, \'const\', $message + $actualVar.toString() + \'.\');',
+        );
+        buffer.writeln('$indent}');
+      }
+    }
+
+    if (rules.minItems != null && baseRef is ListTypeRef) {
+      buffer.writeln('${indent}if ($valueVar.length < ${rules.minItems}) {');
+      final message = _stringLiteral(
+        'Expected at least ${rules.minItems} items but found ',
+      );
+      buffer.writeln(
+        '$indent  throwValidationError($pointerVar, \'minItems\', $message + $valueVar.length.toString() + \'.\');',
+      );
+      buffer.writeln('$indent}');
+    }
+
+    if (rules.maxItems != null && baseRef is ListTypeRef) {
+      buffer.writeln('${indent}if ($valueVar.length > ${rules.maxItems}) {');
+      final message = _stringLiteral(
+        'Expected at most ${rules.maxItems} items but found ',
+      );
+      buffer.writeln(
+        '$indent  throwValidationError($pointerVar, \'maxItems\', $message + $valueVar.length.toString() + \'.\');',
+      );
+      buffer.writeln('$indent}');
+    }
+
+    if (rules.uniqueItems == true && baseRef is ListTypeRef) {
+      final seenVar = '_seen$suffix';
+      buffer.writeln('${indent}final $seenVar = <String>{};');
+      buffer.writeln('${indent}for (var i = 0; i < $valueVar.length; i++) {');
+      buffer.writeln('${indent}  final item = $valueVar[i];');
+      final serialized = baseRef.itemType.serializeInline(
+        'item',
+        required: true,
+      );
+      buffer.writeln('${indent}  final key = uniqueItemKey($serialized);');
+      buffer.writeln('${indent}  if (!$seenVar.add(key)) {');
+      final message = _stringLiteral(
+        'Expected all items to be unique but found a duplicate at index ',
+      );
+      buffer.writeln(
+        '$indent    throwValidationError($pointerVar, \'uniqueItems\', $message + i.toString() + \'.\');',
+      );
+      buffer.writeln('${indent}  }');
+      buffer.writeln('${indent}}');
+    }
+
+    if ((rules.minProperties != null || rules.maxProperties != null) &&
+        baseRef is ObjectTypeRef) {
+      final countVar = '_propertyCount$suffix';
+      buffer.writeln('${indent}final $countVar = $valueVar.toJson().length;');
+      if (rules.minProperties != null) {
+        buffer.writeln(
+          '${indent}if ($countVar < ${rules.minProperties}) {',
+        );
+        final message = _stringLiteral(
+          'Expected at least ${rules.minProperties} properties but found ',
+        );
+        buffer.writeln(
+          '$indent  throwValidationError($pointerVar, \'minProperties\', $message + $countVar.toString() + \'.\');',
+        );
+        buffer.writeln('$indent}');
+      }
+      if (rules.maxProperties != null) {
+        buffer.writeln(
+          '${indent}if ($countVar > ${rules.maxProperties}) {',
+        );
+        final message = _stringLiteral(
+          'Expected at most ${rules.maxProperties} properties but found ',
+        );
+        buffer.writeln(
+          '$indent  throwValidationError($pointerVar, \'maxProperties\', $message + $countVar.toString() + \'.\');',
         );
         buffer.writeln('$indent}');
       }
@@ -2083,6 +2181,28 @@ class _SchemaEmitter {
     String suffix,
   ) {
     if (!_typeRequiresValidation(ref, options)) {
+      return;
+    }
+    if (ref is ValidatedTypeRef) {
+      if (ref.validation.hasRules) {
+        _writeValidationRulesForType(
+          buffer,
+          ref.inner,
+          ref.validation,
+          valueExpression,
+          pointerExpression,
+          indent: indent,
+          suffix: suffix,
+        );
+      }
+      _writeNestedValidation(
+        buffer,
+        ref.inner,
+        valueExpression,
+        pointerExpression,
+        indent,
+        suffix,
+      );
       return;
     }
     if (ref is FalseTypeRef) {
@@ -2188,22 +2308,23 @@ class _SchemaEmitter {
           '$indent  final itemPointer = appendJsonPointer($pointerExpression, i.toString());',
         );
         buffer.writeln('$indent  final item = $valueExpression[i];');
-        if (containsType is ObjectTypeRef &&
-            _classNeedsValidation(containsType.spec, options)) {
-          final klass = containsType.spec;
-          buffer.writeln('$indent  var matches = item is ${klass.name};');
+        final matchCondition = _containsMatchCondition(containsType, 'item');
+        buffer.writeln('$indent  var matches = $matchCondition;');
+        if (_typeRequiresValidation(containsType, options)) {
           buffer.writeln('$indent  if (matches) {');
           buffer.writeln('$indent    try {');
-          buffer.writeln(
-            '$indent      (item as ${klass.name}).validate(pointer: itemPointer, context: context);',
+          _writeNestedValidation(
+            buffer,
+            containsType,
+            'item',
+            'itemPointer',
+            '$indent    ',
+            '${suffix}c',
           );
           buffer.writeln('$indent    } on ValidationError {');
           buffer.writeln('$indent      matches = false;');
           buffer.writeln('$indent    }');
           buffer.writeln('$indent  }');
-        } else {
-          final matchCondition = _containsMatchCondition(containsType, 'item');
-          buffer.writeln('$indent  final matches = $matchCondition;');
         }
         buffer.writeln('$indent  if (matches) {');
         buffer.writeln('$indent    $containsCountVar++;');
@@ -2349,23 +2470,28 @@ class _SchemaEmitter {
     }
   }
 
+  TypeRef _unwrapValidated(TypeRef ref) =>
+      ref is ValidatedTypeRef ? ref.inner : ref;
+
   bool _isStringLike(TypeRef ref) {
-    return ref is PrimitiveTypeRef && ref.typeName == 'String';
+    final base = _unwrapValidated(ref);
+    return base is PrimitiveTypeRef && base.typeName == 'String';
   }
 
   bool _isNumericType(TypeRef ref) {
-    if (ref is! PrimitiveTypeRef) {
+    final base = _unwrapValidated(ref);
+    if (base is! PrimitiveTypeRef) {
       return false;
     }
-    return ref.typeName == 'int' ||
-        ref.typeName == 'double' ||
-        ref.typeName == 'num';
+    return base.typeName == 'int' ||
+        base.typeName == 'double' ||
+        base.typeName == 'num';
   }
 
-  String? _constComparableExpression(IrProperty property, String valueVar) {
-    final ref = property.typeRef;
-    if (ref is PrimitiveTypeRef) {
-      final typeName = ref.typeName;
+  String? _constComparableExpressionForType(TypeRef ref, String valueVar) {
+    final base = _unwrapValidated(ref);
+    if (base is PrimitiveTypeRef) {
+      final typeName = base.typeName;
       if (typeName == 'String' ||
           typeName == 'int' ||
           typeName == 'double' ||
@@ -2374,8 +2500,8 @@ class _SchemaEmitter {
         return valueVar;
       }
     }
-    if (ref is FormatTypeRef) {
-      return ref.serializeInline(valueVar, required: true);
+    if (base is FormatTypeRef) {
+      return base.serializeInline(valueVar, required: true);
     }
     return null;
   }
@@ -2593,6 +2719,12 @@ bool _typeRequiresValidation(
   SchemaGeneratorOptions options, [
   Set<IrClass>? stack,
 ]) {
+  if (ref is ValidatedTypeRef) {
+    if (ref.validation.hasRules) {
+      return true;
+    }
+    return _typeRequiresValidation(ref.inner, options, stack);
+  }
   if (ref is FalseTypeRef) {
     return true;
   }
@@ -2627,6 +2759,9 @@ bool _typeRequiresValidation(
 }
 
 String _containsMatchCondition(TypeRef ref, String valueExpression) {
+  if (ref is ValidatedTypeRef) {
+    return _containsMatchCondition(ref.inner, valueExpression);
+  }
   if (ref is PrimitiveTypeRef) {
     final typeName = ref.typeName;
     if (typeName == 'dynamic') {

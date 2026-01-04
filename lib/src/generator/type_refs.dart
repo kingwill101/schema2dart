@@ -146,6 +146,67 @@ class FalseTypeRef extends TypeRef {
   String get identity => 'false';
 }
 
+class ValidatedTypeRef extends TypeRef {
+  const ValidatedTypeRef(this.inner, this.validation);
+
+  final TypeRef inner;
+  final PropertyValidationRules validation;
+
+  @override
+  String dartType({bool nullable = false}) =>
+      inner.dartType(nullable: nullable);
+
+  @override
+  String deserializeInline(String sourceExpression, {required bool required}) =>
+      inner.deserializeInline(sourceExpression, required: required);
+
+  @override
+  String serializeInline(String valueExpression, {required bool required}) =>
+      inner.serializeInline(valueExpression, required: required);
+
+  @override
+  bool get requiresConversionOnSerialize => inner.requiresConversionOnSerialize;
+
+  @override
+  bool get isList => inner.isList;
+
+  @override
+  String get identity => 'validated:${inner.identity}:${_rulesIdentity(validation)}';
+
+  static String _rulesIdentity(PropertyValidationRules rules) {
+    final parts = <String>[];
+    if (rules.minLength != null) parts.add('minLength=${rules.minLength}');
+    if (rules.maxLength != null) parts.add('maxLength=${rules.maxLength}');
+    if (rules.minimum != null) {
+      parts.add(
+        rules.exclusiveMinimum
+            ? 'exclusiveMinimum=${rules.minimum}'
+            : 'minimum=${rules.minimum}',
+      );
+    }
+    if (rules.maximum != null) {
+      parts.add(
+        rules.exclusiveMaximum
+            ? 'exclusiveMaximum=${rules.maximum}'
+            : 'maximum=${rules.maximum}',
+      );
+    }
+    if (rules.pattern != null) parts.add('pattern=${rules.pattern}');
+    if (rules.constValue != null) parts.add('const=${rules.constValue}');
+    if (rules.multipleOf != null) parts.add('multipleOf=${rules.multipleOf}');
+    if (rules.minItems != null) parts.add('minItems=${rules.minItems}');
+    if (rules.maxItems != null) parts.add('maxItems=${rules.maxItems}');
+    if (rules.uniqueItems != null) parts.add('uniqueItems=${rules.uniqueItems}');
+    if (rules.minProperties != null) {
+      parts.add('minProperties=${rules.minProperties}');
+    }
+    if (rules.maxProperties != null) {
+      parts.add('maxProperties=${rules.maxProperties}');
+    }
+    return parts.join(',');
+  }
+}
+
 class ObjectTypeRef extends TypeRef {
   const ObjectTypeRef(this.spec);
 

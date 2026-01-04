@@ -65,6 +65,7 @@ void main() {
         generated,
         contains("final itemPointer = appendJsonPointer(_ptr5, i.toString());"),
       );
+      expect(generated, contains("throwValidationError(itemPointer, 'maxLength'"));
       expect(generated, contains("_actualp4 != 'active'"));
     });
 

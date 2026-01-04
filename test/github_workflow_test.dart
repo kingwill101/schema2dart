@@ -98,9 +98,13 @@ void main() {
           },
         ),
         defaults: const model.Defaults(),
-        env: const {'CI': 'true'},
+        env: const model.ContainerEnvObject(
+          additionalProperties: {
+            'CI': model.ContainerEnvObjectAdditionalPropertyString('true'),
+          },
+        ),
         permissions: model.PermissionsObject(contents: model.PermissionsObjectActions.read),
-        concurrency: model.GithubWorkflowConcurrency(
+        concurrency: model.GithubWorkflowConcurrencyConcurrency(
           group: 'ci-\${{ github.ref }}',
           cancelInProgress: model.ConcurrencyCancelInProgressBool(true),
         ),
