@@ -6,7 +6,7 @@ sealed class ContainerPort {
   const ContainerPort();
 
   factory ContainerPort.fromJson(dynamic json) {
-    if (json is num) return ContainerPortNum(json);
+    if (json is num) return ContainerPortNum(json.toDouble());
     if (json is String) return ContainerPortString(json);
     throw ArgumentError('Invalid ContainerPort value type: ${json.runtimeType}');
   }

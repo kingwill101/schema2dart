@@ -16,34 +16,48 @@ const schemaWithKeywords = {
 // This generates:
 //
 // class MyClass {
-//   @JsonKey(name: 'class')
 //   final String class$;
-//   
-//   @JsonKey(name: 'const')
 //   final int? const$;
-//   
-//   @JsonKey(name: 'if')
 //   final bool? if$;
-//   
-//   @JsonKey(name: 'enum')
 //   final String? enum$;
-//   
-//   @JsonKey(name: 'switch')
 //   final double? switch$;
-//   
-//   MyClass({
+//
+//   const MyClass({
 //     required this.class$,
 //     this.const$,
 //     this.if$,
 //     this.enum$,
 //     this.switch$,
 //   });
+//
+//   factory MyClass.fromJson(Map<String, dynamic> json) {
+//     final class$ = json['class'] as String;
+//     final const$ = json['const'] as int?;
+//     final if$ = json['if'] as bool?;
+//     final enum$ = json['enum'] as String?;
+//     final switch$ = json['switch'] as double?;
+//     return MyClass(
+//       class$: class$,
+//       const$: const$,
+//       if$: if$,
+//       enum$: enum$,
+//       switch$: switch$,
+//     );
+//   }
+//
+//   Map<String, dynamic> toJson() => {
+//     'class': class$,
+//     if (const$ != null) 'const': const$,
+//     if (if$ != null) 'if': if$,
+//     if (enum$ != null) 'enum': enum$,
+//     if (switch$ != null) 'switch': switch$,
+//   };
 // }
 
 void demonstrateReservedKeywords() {
   print('Reserved keyword handling:');
   print('1. Appends \$ to field names (class -> class\$)');
-  print('2. Uses @JsonKey to map back to original names');
+  print('2. Maps back to original names in toJson/fromJson');
   print('3. Serialization/deserialization works transparently');
   print('4. Prevents Dart compilation errors');
   

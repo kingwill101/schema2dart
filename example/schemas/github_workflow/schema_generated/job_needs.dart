@@ -7,6 +7,7 @@ sealed class JobNeeds {
   const JobNeeds();
 
   factory JobNeeds.fromJson(dynamic json) {
+    if (json is List) return JobNeedsArray((json as List).map((e) => e as String).toList());
     if (json is String) return JobNeedsString(json);
     throw ArgumentError('Invalid JobNeeds value type: ${json.runtimeType}');
   }

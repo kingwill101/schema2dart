@@ -16,6 +16,8 @@ sealed class GithubWorkflowOn {
   const GithubWorkflowOn();
 
   factory GithubWorkflowOn.fromJson(dynamic json) {
+    if (json is String) return GithubWorkflowOnValue(EventJson.fromJson(json));
+    if (json is List) return GithubWorkflowOnArray((json as List).map((e) => EventJson.fromJson(e as String)).toList());
     if (json is! Map<String, dynamic>) {
       throw ArgumentError('Invalid GithubWorkflowOn value: ${json.runtimeType}');
     }
@@ -32,7 +34,7 @@ class GithubWorkflowOnValue extends GithubWorkflowOn {
   const GithubWorkflowOnValue(this.value) : super();
 
   @override
-  dynamic toJson() => value;
+  dynamic toJson() => value.toJson();
 }
 class GithubWorkflowOnArray extends GithubWorkflowOn {
   final List<Event> value;
@@ -40,7 +42,7 @@ class GithubWorkflowOnArray extends GithubWorkflowOn {
   const GithubWorkflowOnArray(this.value) : super();
 
   @override
-  dynamic toJson() => value;
+  dynamic toJson() => value.map((e) => e.toJson()).toList();
 }
 class GithubWorkflowOnObject extends GithubWorkflowOn {
   /// Runs your workflow anytime the branch_protection_rule event occurs. More than one activity type triggers this event.

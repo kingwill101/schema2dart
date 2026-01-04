@@ -7,7 +7,7 @@ sealed class NormalJobTimeoutMinutes {
   const NormalJobTimeoutMinutes();
 
   factory NormalJobTimeoutMinutes.fromJson(dynamic json) {
-    if (json is num) return NormalJobTimeoutMinutesNum(json);
+    if (json is num) return NormalJobTimeoutMinutesNum(json.toDouble());
     if (json is String) return NormalJobTimeoutMinutesString(json);
     throw ArgumentError('Invalid NormalJobTimeoutMinutes value type: ${json.runtimeType}');
   }

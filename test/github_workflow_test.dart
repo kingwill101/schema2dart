@@ -45,7 +45,7 @@ void main() {
       expect(union.keyword, equals('oneOf'));
     });
 
-    test('multi-file generation keeps job variants as parts', () {
+    test('multi-file generation emits job variants in the union file', () {
       final generator = SchemaGenerator(
         options: SchemaGeneratorOptions(sourcePath: schemaPath),
       );
@@ -60,10 +60,19 @@ void main() {
       final unionFile = unionFileEntry.value;
       expect(
         unionFile,
-        contains("part 'normal_job.dart';"),
-        reason: 'Normal job variant should be emitted as a part file.',
+        contains('class NormalJob extends GithubWorkflowJobsPatternProperty1'),
       );
-      expect(unionFile, contains("part 'reusable_workflow_call_job.dart';"));
+      expect(
+        unionFile,
+        contains(
+          'class ReusableWorkflowCallJob extends GithubWorkflowJobsPatternProperty1',
+        ),
+      );
+      expect(plan.files.containsKey('normal_job.dart'), isFalse);
+      expect(
+        plan.files.containsKey('reusable_workflow_call_job.dart'),
+        isFalse,
+      );
 
       final barrel = plan.barrel;
       expect(
@@ -98,12 +107,12 @@ void main() {
           },
         ),
         defaults: const model.Defaults(),
-        env: const model.ContainerEnvObject(
+        env: const model.EnvObject(
           additionalProperties: {
-            'CI': model.ContainerEnvObjectAdditionalPropertyString('true'),
+            'CI': model.EnvObjectAdditionalPropertyString('true'),
           },
         ),
-        permissions: model.PermissionsObject(contents: model.PermissionsObjectActions.read),
+        permissions: model.PermissionsObject(contents: model.PermissionsLevel.read),
         concurrency: model.GithubWorkflowConcurrencyConcurrency(
           group: 'ci-\${{ github.ref }}',
           cancelInProgress: model.ConcurrencyCancelInProgressBool(true),

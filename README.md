@@ -1,7 +1,7 @@
 # schema2model
 
 [![Pub Version](https://img.shields.io/pub/v/schema2model)](https://pub.dev/packages/schema2model)
-[![License](https://img.shields.io/github/license/yourusername/schema2model)](LICENSE)
+[![License](https://img.shields.io/github/license/kingwill101/schema2model)](LICENSE)
 
 **Production-ready JSON Schema to Dart code generator with full JSON Schema 2020-12 support.**
 
@@ -39,7 +39,7 @@ dev_dependencies:
 targets:
   $default:
     builders:
-      schema2model:schema_builder:
+      schema2model|schema_builder:
         options:
           emit_validation_helpers: true
         generate_for:
@@ -108,12 +108,14 @@ void main() {
 
 ### Helper Functions
 
-Generate convenient top-level parse/stringify functions:
+Generate convenient top-level parse/stringify functions (programmatic API):
 
-```yaml
-# build.yaml
-options:
-  generate_helpers: true
+```dart
+final generator = SchemaGenerator(
+  options: const SchemaGeneratorOptions(
+    generateHelpers: true,
+  ),
+);
 ```
 
 ```dart
@@ -169,65 +171,83 @@ Automatically handles Dart reserved words:
 ```
 
 ```dart
-// Generated with safe field names:
+// Generated with safe field names and explicit mapping in toJson/fromJson:
 class MyClass {
-  @JsonKey(name: 'class')
   final String class$;
-  
-  @JsonKey(name: 'const')
-  final int const$;
+  final int? const$;
+
+  const MyClass({
+    required this.class$,
+    this.const$,
+  });
+
+  factory MyClass.fromJson(Map<String, dynamic> json) {
+    final class$ = json['class'] as String;
+    final const$ = json['const'] as int?;
+    return MyClass(class$: class$, const$: const$);
+  }
+
+  Map<String, dynamic> toJson() => {
+    'class': class$,
+    if (const$ != null) 'const': const$,
+  };
 }
 ```
 
 ### Usage Documentation
 
-Add usage examples to generated files:
+Usage docs are available via the programmatic API (not exposed in the build
+runner options yet):
 
-```yaml
-# build.yaml
-options:
-  emit_usage_docs: true
-  generate_helpers: true
+```dart
+final generator = SchemaGenerator(
+  options: const SchemaGeneratorOptions(
+    emitUsageDocs: true,
+    emitReadmeSnippets: true,
+  ),
+);
 ```
-
-Generated files include comprehensive usage examples in the header.
 
 ## ⚙️ Configuration Options
 
 ### Build Runner Options
 
+Build runner currently supports a focused set of options:
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `root_class` | String | derived | Override the root class name |
+| `prefer_camel_case` | bool | `true` | Convert property names to camelCase |
+| `emit_docs` | bool | `true` | Emit doc comments from schema metadata |
+| `header` | String | _none_ | Custom file header |
+| `single_file_output` | bool | `false` | Emit a single `.dart` file vs split parts |
+| `emit_validation_helpers` | bool | `true` | Generate `validate()` methods |
+| `allow_network_refs` | bool | `false` | Permit network `$ref` resolution |
+| `network_cache_path` | String | `.dart_tool/schema2model/cache` | Cache directory for fetched refs |
+| `default_dialect` | String | `latest` | Dialect URI or `none` to require explicit `$schema` |
+| `include_globs` | String or List<String> | `**/*.schema.json`, `**/*.json` | File globs to include |
+
+Example `build.yaml`:
+
 ```yaml
-# build.yaml
 targets:
   $default:
     builders:
-      schema2model:schema_builder:
+      schema2model|schema_builder:
         options:
-          # Code Generation
-          root_class: String                    # Override root class name
-          prefer_camel_case: true               # Use camelCase for fields
-          emit_docs: true                       # Include doc comments
-          single_file_output: false             # Single vs multi-file
-          header: String                        # Custom file header
-          generate_helpers: false               # Generate fromJson/toJson helpers
-          emit_usage_docs: false                # Add usage examples to headers
-          
-          # Validation & Types
-          emit_validation_helpers: false        # Generate validate() methods
-          enable_format_hints: false            # Rich types for formats
-          
-          # Security
-          allow_network_refs: false             # Enable network resolution
-          allowed_network_hosts: [...]          # Host allowlist
-          allowed_file_paths: [...]             # File path allowlist
-          max_reference_depth: 100              # Recursion limit
-          
-          # Schema Processing
-          default_dialect: "latest"             # Default JSON Schema version
-          
+          emit_validation_helpers: true
+          default_dialect: "latest"
+          include_globs:
+            - lib/schemas/**/*.json
         generate_for:
-          - lib/schemas/**/*.json               # Input file pattern
+          - lib/schemas/**/*.json
 ```
+
+`include_globs` is an additional filter applied inside the builder; `generate_for`
+still controls what build_runner feeds into the builder.
+
+For advanced options (format hints, usage docs, custom loaders, security
+allowlists), use the programmatic API below.
 
 ### Programmatic API Options
 
@@ -240,17 +260,22 @@ SchemaGeneratorOptions(
   singleFileOutput: false,
   generateHelpers: true,
   emitUsageDocs: true,
-  
+  emitReadmeSnippets: true,
+
   // Validation & types
   emitValidationHelpers: true,
   enableFormatHints: true,
-  
+  enableContentKeywords: false,
+
   // Security (see REFERENCE_GOVERNANCE.md)
   allowNetworkRefs: false,
   allowedNetworkHosts: ['schemas.company.com'],
   allowedFilePaths: ['/workspace/schemas'],
   maxReferenceDepth: 50,
-  
+  networkCachePath: '.dart_tool/schema2model/cache',
+  defaultDialect: SchemaDialect.latest,
+  supportedDialects: SchemaDialect.defaultDialectRegistry,
+
   // Custom resolution
   documentLoader: customLoader,
   onWarning: (msg) => print(msg),
@@ -323,7 +348,10 @@ See [LIMITATIONS.md](LIMITATIONS.md) for details and workarounds.
 Check out the [`example/`](example/) directory for:
 
 - **[build_runner_example](example/build_runner_example/)** - Full build runner setup
-- **[standalone_example](example/standalone_example/)** - API usage examples
+- **[schema2model_example.dart](example/schema2model_example.dart)** - Standalone API example
+- **[helper_functions_example.dart](example/helper_functions_example.dart)** - Top-level helpers
+- **[sealed_unions_example.dart](example/sealed_unions_example.dart)** - `oneOf`/`anyOf` unions
+- **[reserved_keywords_example.dart](example/reserved_keywords_example.dart)** - Reserved words
 - **[Real schemas](example/schemas/)** - GitHub workflows, actions, and more
 
 ## 🔒 Security
@@ -356,7 +384,7 @@ See [REFERENCE_GOVERNANCE.md](REFERENCE_GOVERNANCE.md) for full details.
 ### Setup
 
 ```bash
-git clone https://github.com/yourusername/schema2model.git
+git clone https://github.com/kingwill101/schema2model.git
 cd schema2model
 dart pub get
 ```
@@ -365,7 +393,6 @@ dart pub get
 
 ```bash
 dart test
-# All 64 tests should pass
 ```
 
 ### Code Quality

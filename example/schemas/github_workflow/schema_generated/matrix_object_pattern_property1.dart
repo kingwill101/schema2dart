@@ -9,6 +9,7 @@ sealed class MatrixObjectPatternProperty1 {
 
   factory MatrixObjectPatternProperty1.fromJson(dynamic json) {
     if (json is String) return MatrixObjectPatternProperty1String(json);
+    if (json is List) return MatrixObjectPatternProperty1Array((json as List).map((e) => MatrixObjectPatternProperty1ArrayItem.fromJson((e as Map).cast<String, dynamic>())).toList());
     throw ArgumentError('Invalid MatrixObjectPatternProperty1 value type: ${json.runtimeType}');
   }
 
@@ -28,5 +29,5 @@ class MatrixObjectPatternProperty1Array extends MatrixObjectPatternProperty1 {
   const MatrixObjectPatternProperty1Array(this.value) : super();
 
   @override
-  dynamic toJson() => value;
+  dynamic toJson() => value.map((e) => e.toJson()).toList();
 }

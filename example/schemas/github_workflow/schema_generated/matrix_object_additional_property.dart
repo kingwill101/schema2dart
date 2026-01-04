@@ -8,6 +8,7 @@ sealed class MatrixObjectAdditionalProperty {
   const MatrixObjectAdditionalProperty();
 
   factory MatrixObjectAdditionalProperty.fromJson(dynamic json) {
+    if (json is List) return MatrixObjectAdditionalPropertyArray((json as List).map((e) => Configuration.fromJson((e as Map).cast<String, dynamic>())).toList());
     if (json is String) return MatrixObjectAdditionalPropertyString(json);
     throw ArgumentError('Invalid MatrixObjectAdditionalProperty value type: ${json.runtimeType}');
   }
@@ -20,7 +21,7 @@ class MatrixObjectAdditionalPropertyArray extends MatrixObjectAdditionalProperty
   const MatrixObjectAdditionalPropertyArray(this.value) : super();
 
   @override
-  dynamic toJson() => value;
+  dynamic toJson() => value.map((e) => e.toJson()).toList();
 }
 class MatrixObjectAdditionalPropertyString extends MatrixObjectAdditionalProperty {
   final String value;

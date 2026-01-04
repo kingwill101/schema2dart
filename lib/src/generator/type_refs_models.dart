@@ -1,0 +1,235 @@
+part of 'package:schema2model/src/generator.dart';
+
+class ObjectTypeRef extends TypeRef {
+  const ObjectTypeRef(this.spec);
+
+  final IrClass spec;
+
+  @override
+  String dartType({bool nullable = false}) =>
+      nullable ? '${spec.name}?' : spec.name;
+
+  @override
+  String deserializeInline(String sourceExpression, {required bool required}) {
+    final mapCast = '($sourceExpression as Map).cast<String, dynamic>()';
+    if (required) {
+      return '${spec.name}.fromJson($mapCast)';
+    }
+    return '$sourceExpression == null ? null : ${spec.name}.fromJson($mapCast)';
+  }
+
+  @override
+  String serializeInline(String valueExpression, {required bool required}) {
+    if (required) {
+      return '$valueExpression.toJson()';
+    }
+    return '$valueExpression?.toJson()';
+  }
+
+  @override
+  bool get requiresConversionOnSerialize => true;
+
+  @override
+  String get identity => 'object:${spec.name}';
+}
+
+class EnumTypeRef extends TypeRef {
+  const EnumTypeRef(this.spec);
+
+  final IrEnum spec;
+
+  @override
+  String dartType({bool nullable = false}) =>
+      nullable ? '${spec.name}?' : spec.name;
+
+  @override
+  String deserializeInline(String sourceExpression, {required bool required}) {
+    final invocation =
+        '${spec.extensionName}.fromJson($sourceExpression as String)';
+    if (required) {
+      return invocation;
+    }
+    return '$sourceExpression == null ? null : $invocation';
+  }
+
+  @override
+  String serializeInline(String valueExpression, {required bool required}) {
+    if (required) {
+      return '$valueExpression.toJson()';
+    }
+    return '$valueExpression?.toJson()';
+  }
+
+  @override
+  bool get requiresConversionOnSerialize => true;
+
+  @override
+  String get identity => 'enum:${spec.name}';
+}
+
+class MixedEnumTypeRef extends TypeRef {
+  const MixedEnumTypeRef(this.spec);
+
+  final IrMixedEnum spec;
+
+  @override
+  String dartType({bool nullable = false}) =>
+      nullable ? '${spec.name}?' : spec.name;
+
+  @override
+  String deserializeInline(String sourceExpression, {required bool required}) {
+    final invocation = '${spec.name}.fromJson($sourceExpression)';
+    if (required) {
+      return invocation;
+    }
+    return '$sourceExpression == null ? null : $invocation';
+  }
+
+  @override
+  String serializeInline(String valueExpression, {required bool required}) {
+    if (required) {
+      return '$valueExpression.toJson()';
+    }
+    return '$valueExpression?.toJson()';
+  }
+
+  @override
+  bool get requiresConversionOnSerialize => true;
+
+  @override
+  String get identity => 'mixedenum:${spec.name}';
+}
+
+class ListTypeRef extends TypeRef {
+  const ListTypeRef({
+    required this.itemType,
+    this.prefixItemTypes = const <TypeRef>[],
+    this.containsType,
+    this.minContains,
+    this.maxContains,
+    this.unevaluatedItemsType,
+    this.disallowUnevaluatedItems = false,
+    this.allowAdditionalItems = true,
+    this.itemsEvaluatesAdditionalItems = false,
+  });
+
+  final TypeRef itemType;
+  final List<TypeRef> prefixItemTypes;
+  final TypeRef? containsType;
+  final int? minContains;
+  final int? maxContains;
+  final TypeRef? unevaluatedItemsType;
+  final bool disallowUnevaluatedItems;
+  final bool allowAdditionalItems;
+  final bool itemsEvaluatesAdditionalItems;
+
+  @override
+  String dartType({bool nullable = false}) {
+    final suffix = nullable ? '?' : '';
+    return 'List<${itemType.dartType()}>$suffix';
+  }
+
+  @override
+  String deserializeInline(String sourceExpression, {required bool required}) {
+    final mapper = itemType.deserializeInline('e', required: true);
+    if (required) {
+      return '($sourceExpression as List).map((e) => $mapper).toList()';
+    }
+    return '$sourceExpression == null ? null : ($sourceExpression as List).map((e) => $mapper).toList()';
+  }
+
+  @override
+  String serializeInline(String valueExpression, {required bool required}) {
+    if (!itemType.requiresConversionOnSerialize) {
+      return valueExpression;
+    }
+    final mapper = itemType.serializeInline('e', required: true);
+    if (required) {
+      return '$valueExpression.map((e) => $mapper).toList()';
+    }
+    return '$valueExpression == null ? null : $valueExpression!.map((e) => $mapper).toList()';
+  }
+
+  @override
+  bool get requiresConversionOnSerialize =>
+      itemType.requiresConversionOnSerialize;
+
+  @override
+  bool get isList => true;
+
+  @override
+  String get identity {
+    final buffer = StringBuffer('list:${itemType.identity}');
+    if (prefixItemTypes.isNotEmpty) {
+      buffer.write(':prefix[');
+      buffer.write(
+        prefixItemTypes.map((type) => type.identity).join(','),
+      );
+      buffer.write(']');
+    }
+    if (containsType != null) {
+      buffer.write(':contains=${containsType!.identity}');
+    }
+    if (minContains != null) {
+      buffer.write(':minContains=$minContains');
+    }
+    if (maxContains != null) {
+      buffer.write(':maxContains=$maxContains');
+    }
+    if (unevaluatedItemsType != null) {
+      buffer.write(':unevaluated=${unevaluatedItemsType!.identity}');
+    }
+    if (disallowUnevaluatedItems) {
+      buffer.write(':disallowUnevaluated');
+    }
+    if (!allowAdditionalItems) {
+      buffer.write(':noAdditional');
+    }
+    if (itemsEvaluatesAdditionalItems) {
+      buffer.write(':itemsEvaluates');
+    }
+    return buffer.toString();
+  }
+}
+
+class FormatTypeRef extends TypeRef {
+  const FormatTypeRef({
+    required this.format,
+    required this.typeName,
+    required String Function(String source) deserialize,
+    required String Function(String value) serialize,
+    this.helperTypeName,
+  }) : _deserialize = deserialize,
+       _serialize = serialize;
+
+  final String format;
+  final String typeName;
+  final String? helperTypeName;
+  final String Function(String source) _deserialize;
+  final String Function(String value) _serialize;
+
+  @override
+  String dartType({bool nullable = false}) =>
+      nullable ? '$typeName?' : typeName;
+
+  @override
+  String deserializeInline(String sourceExpression, {required bool required}) {
+    final casted = '($sourceExpression as String)';
+    final parsed = _deserialize(casted);
+    if (required) {
+      return parsed;
+    }
+    return '$sourceExpression == null ? null : ${_deserialize('($sourceExpression as String)')}';
+  }
+
+  @override
+  String serializeInline(String valueExpression, {required bool required}) {
+    return _serialize(valueExpression);
+  }
+
+  @override
+  bool get requiresConversionOnSerialize => true;
+
+  @override
+  String get identity => 'format:$format:$typeName';
+}

@@ -171,8 +171,8 @@ void main() {
       );
       final listRef = property.typeRef as ListTypeRef;
       final itemRef = listRef.itemType as ObjectTypeRef;
-      expect(property.dartType, equals('List<RootSchemaValue>?'));
-      expect(itemRef.spec.name, equals('RootSchemaValue'));
+      expect(property.dartType, equals('List<Value>?'));
+      expect(itemRef.spec.name, equals('Value'));
       expect(itemRef.spec.name, isNot(contains('Contains')));
 
       final generated = generator.generate(schema);

@@ -41,8 +41,8 @@ void main() {
           'RunsJavascript',
           'RunsComposite',
           'RunsDocker',
-          'RootSchemaOutputsComposite',
-          'RootSchemaInputs',
+          'OutputsComposite',
+          'Inputs',
         ]),
       );
       expect(classNames, isNot(contains('RunsJavascript2')));
@@ -64,9 +64,14 @@ void main() {
       final enumNames = ir.enums.map((enumeration) => enumeration.name).toSet();
       expect(
         enumNames,
-        containsAll(<String>['Using', 'Icon']),
+        containsAll(<String>[
+          'RunsJavascriptUsing',
+          'RunsCompositeStepShellVariant2',
+          'BrandingColor',
+          'BrandingIcon',
+        ]),
       );
-      expect(enumNames, isNot(contains('Using2')));
+      expect(enumNames, isNot(contains('RunsJavascriptUsing2')));
     });
 
     test(
@@ -136,7 +141,7 @@ void main() {
 
     test('composite steps capture required combinations as metadata', () {
       final stepsItem = ir.classes.firstWhere(
-        (klass) => klass.name == 'Step',
+        (klass) => klass.name == 'RunsCompositeStep',
       );
       expect(stepsItem.conditionalConstraints, isNotEmpty);
       final constraint = stepsItem.conditionalConstraints.singleWhere(

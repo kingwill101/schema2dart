@@ -21,7 +21,7 @@ class RootSchemaOnPullRequestTarget {
     this.pathsIgnore,
     this.tags,
     this.tagsIgnore,
-    this.types = const ['opened', 'synchronize', 'reopened'],
+    this.types = const TypesArray(const ['opened', 'synchronize', 'reopened']),
   });
 
   factory RootSchemaOnPullRequestTarget.fromJson(Map<String, dynamic> json) {
@@ -38,7 +38,7 @@ class RootSchemaOnPullRequestTarget {
     remaining.remove('tags');
     final tagsIgnore = json['tags-ignore'] == null ? null : (json['tags-ignore'] as List).map((e) => e as String).toList();
     remaining.remove('tags-ignore');
-    final types = (json['types'] == null ? null : Types.fromJson((json['types'] as Map).cast<String, dynamic>())) ?? const ['opened', 'synchronize', 'reopened'];
+    final types = (json['types'] == null ? null : Types.fromJson((json['types'] as Map).cast<String, dynamic>())) ?? const TypesArray(const ['opened', 'synchronize', 'reopened']);
     remaining.remove('types');
     return RootSchemaOnPullRequestTarget(
       branches: branches,

@@ -7,7 +7,7 @@ sealed class StepTimeoutMinutes {
   const StepTimeoutMinutes();
 
   factory StepTimeoutMinutes.fromJson(dynamic json) {
-    if (json is num) return StepTimeoutMinutesNum(json);
+    if (json is num) return StepTimeoutMinutesNum(json.toDouble());
     if (json is String) return StepTimeoutMinutesString(json);
     throw ArgumentError('Invalid StepTimeoutMinutes value type: ${json.runtimeType}');
   }

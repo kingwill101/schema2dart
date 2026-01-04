@@ -1,0 +1,90 @@
+part of 'package:schema2model/src/generator.dart';
+
+const IrHelper _validationHelper = IrHelper(
+  name: 'ValidationError',
+  code: '''
+import 'dart:convert';
+
+String appendJsonPointer(String pointer, String token) {
+  final escaped = token.replaceAll('~', '~0').replaceAll('/', '~1');
+  if (pointer.isEmpty) return '/' + escaped;
+  return pointer + '/' + escaped;
+}
+
+String uniqueItemKey(Object? value) => jsonEncode(value);
+
+Never throwValidationError(String pointer, String keyword, String message) =>
+    throw ValidationError(pointer: pointer, keyword: keyword, message: message);
+
+class ValidationAnnotation {
+  const ValidationAnnotation({
+    required this.keyword,
+    required this.value,
+    this.schemaPointer,
+  });
+
+  final String keyword;
+  final Object? value;
+  final String? schemaPointer;
+}
+
+class ValidationContext {
+  ValidationContext();
+
+  final Map<String, List<ValidationAnnotation>> annotations = <String, List<ValidationAnnotation>>{};
+  final Map<String, Set<String>> evaluatedProperties = <String, Set<String>>{};
+  final Map<String, Set<int>> evaluatedItems = <String, Set<int>>{};
+
+  void annotate(
+    String pointer,
+    String keyword,
+    Object? value, {
+    String? schemaPointer,
+  }) {
+    final list = annotations.putIfAbsent(pointer, () => <ValidationAnnotation>[]);
+    list.add(
+      ValidationAnnotation(
+        keyword: keyword,
+        value: value,
+        schemaPointer: schemaPointer,
+      ),
+    );
+  }
+
+  void markProperty(String pointer, String property) {
+    evaluatedProperties.putIfAbsent(pointer, () => <String>{}).add(property);
+  }
+
+  void markItem(String pointer, int index) {
+    evaluatedItems.putIfAbsent(pointer, () => <int>{}).add(index);
+  }
+}
+
+class ValidationError implements Exception {
+  ValidationError({
+    required this.pointer,
+    required this.keyword,
+    required this.message,
+  });
+
+  final String pointer;
+  final String keyword;
+  final String message;
+
+  @override
+  String toString() => 'ValidationError(' + keyword + ' @ ' + pointer + ': ' + message + ')';
+}
+''',
+);
+String _elementClassName(String base) {
+  // Use the improved singularize function
+  final singularized = _SchemaWalker._singularize(base);
+  
+  // Only add 'Item' suffix if singularization didn't change the word
+  // (meaning it wasn't a plural form)
+  if (singularized == base) {
+    return '${base}Item';
+  }
+  
+  return singularized;
+}

@@ -4,7 +4,7 @@
 
 import 'container_credentials.dart';
 import 'container_port.dart';
-import 'reusable_workflow_call_job_secrets.dart';
+import 'env.dart';
 
 /// A container to run any steps in a job that don't already specify a container. If you have steps that use both script and container actions, the container actions will run as sibling containers on the same network with the same volume mounts.
 /// If you do not set a container, all steps will run directly on the host specified by runs-on unless a step refers to an action configured to run in a container.
@@ -47,7 +47,7 @@ class Container extends NormalJobContainer {
   /// If the image's container registry requires authentication to pull the image, you can use credentials to set a map of the username and password. The credentials are the same values that you would provide to the `docker login` command.
   final ContainerCredentials? credentials;
   /// Sets an array of environment variables in the container.
-  final ContainerEnv? env;
+  final Env? env;
   /// The Docker image to use as the container to run the action. The value can be the Docker Hub image name or a registry name.
   final String image;
   /// Additional Docker container resource options. For a list of options, see https://docs.docker.com/engine/reference/commandline/create/#options.
@@ -74,7 +74,7 @@ class Container extends NormalJobContainer {
     final remaining = Map<String, dynamic>.from(json);
     final credentials = json['credentials'] == null ? null : ContainerCredentials.fromJson((json['credentials'] as Map).cast<String, dynamic>());
     remaining.remove('credentials');
-    final env = json['env'] == null ? null : ContainerEnv.fromJson((json['env'] as Map).cast<String, dynamic>());
+    final env = json['env'] == null ? null : Env.fromJson((json['env'] as Map).cast<String, dynamic>());
     remaining.remove('env');
     final image = json['image'] as String;
     remaining.remove('image');

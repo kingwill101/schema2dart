@@ -8,6 +8,7 @@ sealed class Types {
   const Types();
 
   factory Types.fromJson(dynamic json) {
+    if (json is List) return TypesArray((json as List).map((e) => e).toList());
     if (json is String) return TypesString(json);
     throw ArgumentError('Invalid Types value type: ${json.runtimeType}');
   }

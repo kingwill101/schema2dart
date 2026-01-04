@@ -7,8 +7,9 @@ sealed class Configuration {
 
   factory Configuration.fromJson(dynamic json) {
     if (json is String) return ConfigurationString(json);
-    if (json is num) return ConfigurationNum(json);
+    if (json is num) return ConfigurationNum(json.toDouble());
     if (json is bool) return ConfigurationBool(json);
+    if (json is List) return ConfigurationArray((json as List).map((e) => e).toList());
     if (json is! Map<String, dynamic>) {
       throw ArgumentError('Invalid Configuration value: ${json.runtimeType}');
     }

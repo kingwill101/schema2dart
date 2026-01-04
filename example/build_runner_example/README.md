@@ -77,9 +77,11 @@ Uses a path dependency to the root package.
 targets:
   $default:
     builders:
-      schema2model:schema_builder:
+      schema2model|schema_builder:
         options:
           emit_validation_helpers: true
+          include_globs:
+            - lib/schemas/**/*.json
         generate_for:
           - lib/schemas/**/*.json
 ```
@@ -87,6 +89,7 @@ targets:
 **Key options:**
 - `emit_validation_helpers: true` - Generate runtime validation
 - `generate_for` - Only process schemas in `lib/schemas/`
+- `include_globs` - Optional filter applied inside the builder
 
 ### `lib/schemas/todo_list.json`
 
@@ -112,9 +115,10 @@ You can customize generation in `build.yaml`:
 ```yaml
 options:
   emit_validation_helpers: true    # Generate validate() methods
-  enable_format_hints: true         # Use rich types for formats
   single_file_output: false         # Split into multiple files
-  emit_documentation: true          # Include doc comments
+  emit_docs: true                   # Include doc comments
+  include_globs:                    # Override input globs
+    - lib/schemas/**/*.json
 ```
 
 See [main README](../../README.md) for all options.
@@ -144,10 +148,9 @@ import 'package:build_runner_example/schemas/user.dart';
 
 ## 📚 Next Steps
 
-- Check out [../standalone_example/](../standalone_example/) for API usage
+- Check out [../schema2model_example.dart](../schema2model_example.dart) for API usage
 - See [../schemas/](../schemas/) for more schema examples
 - Read [../../REFERENCE_GOVERNANCE.md](../../REFERENCE_GOVERNANCE.md) for security features
-- Explore advanced features in [../features/](../features/)
 
 ## 🐛 Troubleshooting
 

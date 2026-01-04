@@ -7,6 +7,7 @@ sealed class NormalJobRunsOnObjectLabels {
 
   factory NormalJobRunsOnObjectLabels.fromJson(dynamic json) {
     if (json is String) return NormalJobRunsOnObjectLabelsString(json);
+    if (json is List) return NormalJobRunsOnObjectLabelsArray((json as List).map((e) => e as String).toList());
     throw ArgumentError('Invalid NormalJobRunsOnObjectLabels value type: ${json.runtimeType}');
   }
 

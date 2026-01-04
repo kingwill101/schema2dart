@@ -42,7 +42,7 @@ void main() {
     );
     expect(
       output,
-      contains('const RootSchemaItem({\n    this.done = false,\n    required this.name,\n  });'),
+      contains('const Item({\n    this.done = false,\n    required this.name,\n  });'),
     );
     expect(
       output,
