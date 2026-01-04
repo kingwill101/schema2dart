@@ -11,10 +11,10 @@ void main() {
       TodoListItem(title: 'Restock pantry'),
       TodoListItem(title: 'Read a book', done: true),
     ],
-    metadata: const Metadata(
+    metadata: const TodoListMetadata(
       owner: 'Morgan',
       color: '#3366FF',
-      reminder: Reminder(
+      reminder: TodoListMetadataReminder(
         time: '2024-05-01T09:00:00Z',
         channel: 'email',
         timezone: 'America/New_York',

@@ -74,6 +74,7 @@ void demonstrateAnyOf() {
   
   print('\nanyOf is handled similarly to oneOf');
   print('Generates sealed class unions for type safety');
+  print('anyOf schema example: $anyOfSchema');
 }
 
 void demonstrateDiscriminatedUnions() {
@@ -102,6 +103,7 @@ void demonstrateDiscriminatedUnions() {
   
   print('\nDiscriminated unions use const values for efficient deserialization');
   print('Pattern matching on sealed classes provides type-safe access');
+  print('Discriminated schema example: $discriminatedSchema');
 }
 
 void main() {

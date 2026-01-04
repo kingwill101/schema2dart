@@ -82,6 +82,7 @@ void demonstrateNestedKeywords() {
   
   print('\nNested objects handle keywords too:');
   print('Each nested class safely escapes reserved words');
+  print('Nested schema example: $nestedSchema');
 }
 
 void demonstrateEnumKeywords() {
@@ -93,6 +94,7 @@ void demonstrateEnumKeywords() {
   
   print('\nEnum values also handle keywords:');
   print('Enum cases use safe names with value mapping');
+  print('Enum schema example: $enumSchema');
 }
 
 void main() {

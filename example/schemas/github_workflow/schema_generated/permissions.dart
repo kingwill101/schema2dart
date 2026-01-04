@@ -5,13 +5,10 @@
 import 'permissions_object_actions.dart';
 import 'permissions_object_models.dart';
 import 'permissions_string.dart';
-import 'validation_error.dart';
 
 /// You can modify the default permissions granted to the GITHUB_TOKEN, adding or removing access as required, so that you only allow the minimum required access.
 sealed class Permissions {
   const Permissions();
-
-  void validate({String pointer = '', ValidationContext? context});
 
   factory Permissions.fromJson(dynamic json) {
     if (json is! Map<String, dynamic>) {
@@ -143,7 +140,4 @@ class PermissionsObject extends Permissions {
     if (statuses != null) map['statuses'] = statuses!.toJson();
     return map;
   }
-
-  @override
-  void validate({String pointer = '', ValidationContext? context}) {}
 }

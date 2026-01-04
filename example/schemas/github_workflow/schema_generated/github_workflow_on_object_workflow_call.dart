@@ -5,7 +5,6 @@
 import 'github_workflow_on_object_workflow_call_inputs.dart';
 import 'github_workflow_on_object_workflow_call_outputs.dart';
 import 'github_workflow_on_object_workflow_call_secrets.dart';
-import 'validation_error.dart';
 
 /// Allows workflows to be reused by other workflows.
 class GithubWorkflowOnObjectWorkflowCall {
@@ -44,6 +43,4 @@ class GithubWorkflowOnObjectWorkflowCall {
     if (secrets != null) map['secrets'] = secrets!.toJson();
     return map;
   }
-
-  void validate({String pointer = '', ValidationContext? context}) {}
 }

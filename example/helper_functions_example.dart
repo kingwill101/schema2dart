@@ -1,5 +1,4 @@
 // Example: Using generated helper functions
-import 'dart:convert';
 
 // Example schema with helper functions enabled
 const schema = {
@@ -19,7 +18,8 @@ const schema = {
 
 void main() {
   // Easy parsing from JSON string
-  final jsonString = '{"name": "Alice", "age": 30, "email": "alice@example.com"}';
+  // Example JSON payload:
+  // {"name": "Alice", "age": 30, "email": "alice@example.com"}
   
   // Using the generated helper function
   // final user = userFromJson(jsonString);

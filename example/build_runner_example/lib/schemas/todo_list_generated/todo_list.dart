@@ -59,6 +59,12 @@ class TodoList {
     final _ptr0 = appendJsonPointer(pointer, 'items');
     final _value0 = items;
     context?.markProperty(pointer, 'items');
+    if (_value0.length < 1) {
+      throwValidationError(_ptr0, 'minItems', 'Expected at least 1 items but found ' + _value0.length.toString() + '.');
+    }
+    if (_value0.length > 25) {
+      throwValidationError(_ptr0, 'maxItems', 'Expected at most 25 items but found ' + _value0.length.toString() + '.');
+    }
     final _ptr1 = appendJsonPointer(pointer, 'metadata');
     final _value1 = metadata;
     if (_value1 != null) {
@@ -84,7 +90,17 @@ class TodoList {
       for (var i = 0; i < _lenp3; i++) {
         final itemPointer = appendJsonPointer(_ptr3, i.toString());
         final item = _value3[i];
-        final matches = item is String;
+        var matches = item is String;
+        if (matches) {
+          try {
+          final _patternp3c = RegExp('^urgent');
+          if (!_patternp3c.hasMatch(item)) {
+            throwValidationError(itemPointer, 'pattern', 'Expected value to match pattern ^urgent but found ' + item + '.');
+          }
+          } on ValidationError {
+            matches = false;
+          }
+        }
         if (matches) {
           _containsCountp3++;
           if (!_evaluatedp3[i]) { _evaluatedp3[i] = true; }

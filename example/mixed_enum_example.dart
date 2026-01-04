@@ -1,16 +1,19 @@
 import 'package:schema2model/schema2model.dart';
+import 'package:test/test.dart';
 
 void main() {
+  test('', () {});
   final schema = {
     '\$schema': 'https://json-schema.org/draft/2020-12/schema',
     'title': 'ConfigValue',
     'type': 'object',
     'properties': {
       'setting': {
-        'description': 'A configuration value that can be string, number, boolean, or null',
-        'enum': ['auto', 'manual', 42, 3.14, true, false, null]
-      }
-    }
+        'description':
+            'A configuration value that can be string, number, boolean, or null',
+        'enum': ['auto', 'manual', 42, 3.14, true, false, null],
+      },
+    },
   };
 
   final generator = SchemaGenerator(options: SchemaGeneratorOptions());
