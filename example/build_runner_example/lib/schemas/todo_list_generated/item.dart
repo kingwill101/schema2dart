@@ -9,10 +9,7 @@ class Item {
   final bool? done;
   final String title;
 
-  const Item({
-    this.done = false,
-    required this.title,
-  });
+  const Item({this.done = false, required this.title});
 
   factory Item.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
@@ -23,12 +20,11 @@ class Item {
     var unmatched = Map<String, dynamic>.from(remaining);
     if (unmatched.isNotEmpty) {
       final unexpected = unmatched.keys.join(', ');
-      throw ArgumentError('Unexpected additional and unevaluated properties: $unexpected');
+      throw ArgumentError(
+        'Unexpected additional and unevaluated properties: $unexpected',
+      );
     }
-    return Item(
-      done: done,
-      title: title,
-    );
+    return Item(done: done, title: title);
   }
 
   Map<String, dynamic> toJson() {

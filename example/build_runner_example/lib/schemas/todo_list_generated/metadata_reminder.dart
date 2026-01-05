@@ -6,19 +6,16 @@ import 'validation_error.dart';
 
 class MetadataReminder {
   final String? channel;
+
   /// Format: date-time (format hints disabled).
-  /// 
+  ///
   /// Date and time as defined by RFC 3339 date-time.
-  /// 
+  ///
   /// See https://json-schema.org/draft/2020-12/json-schema-validation.html#name-dates-times-and-duration.
   final String time;
   final String? timezone;
 
-  const MetadataReminder({
-    this.channel,
-    required this.time,
-    this.timezone,
-  });
+  const MetadataReminder({this.channel, required this.time, this.timezone});
 
   factory MetadataReminder.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
@@ -33,11 +30,7 @@ class MetadataReminder {
       final unexpected = unmatched.keys.join(', ');
       throw ArgumentError('Unexpected unevaluated properties: $unexpected');
     }
-    return MetadataReminder(
-      channel: channel,
-      time: time,
-      timezone: timezone,
-    );
+    return MetadataReminder(channel: channel, time: time, timezone: timezone);
   }
 
   Map<String, dynamic> toJson() {
@@ -64,7 +57,11 @@ class MetadataReminder {
     }
     if (_value0 != null) {
       if (_value2 == null) {
-        throwValidationError(pointer, 'dependentRequired', 'Property "timezone" must be present when "channel" is defined.');
+        throwValidationError(
+          pointer,
+          'dependentRequired',
+          'Property "timezone" must be present when "channel" is defined.',
+        );
       }
     }
   }

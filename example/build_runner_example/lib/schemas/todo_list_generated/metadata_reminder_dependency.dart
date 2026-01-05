@@ -8,17 +8,17 @@ import 'validation_error.dart';
 class MetadataReminderDependency {
   final MetadataReminderDependencyChannel? channel;
 
-  const MetadataReminderDependency({
-    this.channel,
-  });
+  const MetadataReminderDependency({this.channel});
 
   factory MetadataReminderDependency.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
-    final channel = json['channel'] == null ? null : MetadataReminderDependencyChannelJson.fromJson(json['channel'] as String);
+    final channel = json['channel'] == null
+        ? null
+        : MetadataReminderDependencyChannelJson.fromJson(
+            json['channel'] as String,
+          );
     remaining.remove('channel');
-    return MetadataReminderDependency(
-      channel: channel,
-    );
+    return MetadataReminderDependency(channel: channel);
   }
 
   Map<String, dynamic> toJson() {

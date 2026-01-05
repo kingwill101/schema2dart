@@ -30,7 +30,8 @@ class ValidationAnnotation {
 class ValidationContext {
   ValidationContext();
 
-  final Map<String, List<ValidationAnnotation>> annotations = <String, List<ValidationAnnotation>>{};
+  final Map<String, List<ValidationAnnotation>> annotations =
+      <String, List<ValidationAnnotation>>{};
   final Map<String, Set<String>> evaluatedProperties = <String, Set<String>>{};
   final Map<String, Set<int>> evaluatedItems = <String, Set<int>>{};
 
@@ -40,7 +41,10 @@ class ValidationContext {
     Object? value, {
     String? schemaPointer,
   }) {
-    final list = annotations.putIfAbsent(pointer, () => <ValidationAnnotation>[]);
+    final list = annotations.putIfAbsent(
+      pointer,
+      () => <ValidationAnnotation>[],
+    );
     list.add(
       ValidationAnnotation(
         keyword: keyword,
@@ -60,11 +64,16 @@ class ValidationContext {
 
   void mergeFrom(ValidationContext other) {
     for (final entry in other.annotations.entries) {
-      final list = annotations.putIfAbsent(entry.key, () => <ValidationAnnotation>[]);
+      final list = annotations.putIfAbsent(
+        entry.key,
+        () => <ValidationAnnotation>[],
+      );
       list.addAll(entry.value);
     }
     for (final entry in other.evaluatedProperties.entries) {
-      evaluatedProperties.putIfAbsent(entry.key, () => <String>{}).addAll(entry.value);
+      evaluatedProperties
+          .putIfAbsent(entry.key, () => <String>{})
+          .addAll(entry.value);
     }
     for (final entry in other.evaluatedItems.entries) {
       evaluatedItems.putIfAbsent(entry.key, () => <int>{}).addAll(entry.value);
@@ -84,7 +93,8 @@ class ValidationError implements Exception {
   final String message;
 
   @override
-  String toString() => 'ValidationError(' + keyword + ' @ ' + pointer + ': ' + message + ')';
+  String toString() =>
+      'ValidationError(' + keyword + ' @ ' + pointer + ': ' + message + ')';
 }
 
 bool isValidFormat(String format, String value) {
@@ -138,8 +148,7 @@ final RegExp _timePattern = RegExp(
 final RegExp _durationPattern = RegExp(
   r'^P(?!$)(?:\d+Y)?(?:\d+M)?(?:\d+W)?(?:\d+D)?(?:T(?:\d+H)?(?:\d+M)?(?:\d+(?:\.\d+)?S)?)?$',
 );
-final RegExp _emailPattern =
-    RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+final RegExp _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 final RegExp _ipv4Pattern = RegExp(
   r'^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$',
 );
@@ -201,7 +210,9 @@ bool _isHostname(String value) {
     return false;
   }
   final labels = value.split('.');
-  final labelPattern = RegExp(r'^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$');
+  final labelPattern = RegExp(
+    r'^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$',
+  );
   for (final label in labels) {
     if (label.isEmpty || label.length > 63) {
       return false;

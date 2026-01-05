@@ -4,16 +4,17 @@
 
 enum MetadataReminderDependencyChannel { email, sms, push }
 
-extension MetadataReminderDependencyChannelJson on MetadataReminderDependencyChannel {
+extension MetadataReminderDependencyChannelJson
+    on MetadataReminderDependencyChannel {
   String toJson() => const {
-        MetadataReminderDependencyChannel.email: 'email',
-        MetadataReminderDependencyChannel.sms: 'sms',
-        MetadataReminderDependencyChannel.push: 'push',
-      }[this]!;
+    MetadataReminderDependencyChannel.email: 'email',
+    MetadataReminderDependencyChannel.sms: 'sms',
+    MetadataReminderDependencyChannel.push: 'push',
+  }[this]!;
 
   static MetadataReminderDependencyChannel fromJson(String value) => const {
-        'email': MetadataReminderDependencyChannel.email,
-        'sms': MetadataReminderDependencyChannel.sms,
-        'push': MetadataReminderDependencyChannel.push,
-      }[value]!;
+    'email': MetadataReminderDependencyChannel.email,
+    'sms': MetadataReminderDependencyChannel.sms,
+    'push': MetadataReminderDependencyChannel.push,
+  }[value]!;
 }
