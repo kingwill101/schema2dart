@@ -19,6 +19,7 @@ import 'permissions.dart';
 import 'reusable_workflow_call_job_concurrency.dart';
 import 'reusable_workflow_call_job_if.dart';
 import 'reusable_workflow_call_job_secrets.dart';
+import 'reusable_workflow_call_job_secrets_string.dart';
 import 'reusable_workflow_call_job_strategy.dart';
 import 'step.dart';
 import 'validation_error.dart';

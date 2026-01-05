@@ -324,6 +324,16 @@ class SchemaGenerator {
         unionVariants: unionVariants,
         unionBaseNames: unionBaseNames,
       );
+      final contentSchemaType = property.contentSchemaTypeRef;
+      if (contentSchemaType != null) {
+        _collectTypeDependencies(
+          contentSchemaType,
+          collected,
+          owner: klass.name,
+          unionVariants: unionVariants,
+          unionBaseNames: unionBaseNames,
+        );
+      }
     }
 
     final additionalField = klass.additionalPropertiesField;
@@ -346,6 +356,21 @@ class SchemaGenerator {
         unionVariants: unionVariants,
         unionBaseNames: unionBaseNames,
       );
+    }
+
+    if (klass.dependentSchemas.isNotEmpty) {
+      for (final constraint in klass.dependentSchemas.values) {
+        final typeRef = constraint.typeRef;
+        if (typeRef != null) {
+          _collectTypeDependencies(
+            typeRef,
+            collected,
+            owner: klass.name,
+            unionVariants: unionVariants,
+            unionBaseNames: unionBaseNames,
+          );
+        }
+      }
     }
 
     final patternField = klass.patternPropertiesField;
@@ -425,6 +450,17 @@ class SchemaGenerator {
         unionVariants: unionVariants,
         unionBaseNames: unionBaseNames,
       );
+      for (final constraint in ref.constraints) {
+        for (final branch in constraint.branches) {
+          _collectTypeDependencies(
+            branch.typeRef,
+            out,
+            owner: owner,
+            unionVariants: unionVariants,
+            unionBaseNames: unionBaseNames,
+          );
+        }
+      }
       return;
     }
     if (ref is ObjectTypeRef) {

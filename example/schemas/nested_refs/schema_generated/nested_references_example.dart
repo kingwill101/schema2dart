@@ -5,6 +5,7 @@
 import 'address.dart';
 import 'manager.dart';
 import 'person.dart';
+import 'root_schema_manager.dart';
 import 'validation_error.dart';
 
 /// Demonstrates $ref usage and nested definitions

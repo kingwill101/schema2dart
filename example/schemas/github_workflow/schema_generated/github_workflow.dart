@@ -5,9 +5,11 @@
 import 'concurrency2.dart';
 import 'defaults.dart';
 import 'env.dart';
+import 'event.dart';
 import 'jobs.dart';
 import 'on.dart';
 import 'permissions.dart';
+import 'reusable_workflow_call_job_concurrency.dart';
 import 'validation_error.dart';
 
 class GithubWorkflow {

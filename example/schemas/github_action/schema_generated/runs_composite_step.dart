@@ -5,6 +5,7 @@
 import 'runs_composite_step_continue_on_error.dart';
 import 'runs_composite_step_env.dart';
 import 'runs_composite_step_shell.dart';
+import 'runs_composite_step_shell_variant2.dart';
 import 'runs_composite_step_with.dart';
 import 'validation_error.dart';
 

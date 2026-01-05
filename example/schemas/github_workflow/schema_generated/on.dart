@@ -8,8 +8,20 @@ import 'on_object_schedule_item.dart';
 import 'on_object_workflow_call.dart';
 import 'on_object_workflow_dispatch.dart';
 import 'root_schema_on_pull_request.dart';
+import 'root_schema_on_pull_request2.dart';
+import 'root_schema_on_pull_request_not.dart';
+import 'root_schema_on_pull_request_not2.dart';
+import 'root_schema_on_pull_request_not3.dart';
 import 'root_schema_on_pull_request_target.dart';
+import 'root_schema_on_pull_request_target2.dart';
+import 'root_schema_on_pull_request_target_not.dart';
+import 'root_schema_on_pull_request_target_not2.dart';
+import 'root_schema_on_pull_request_target_not3.dart';
 import 'root_schema_on_push.dart';
+import 'root_schema_on_push2.dart';
+import 'root_schema_on_push_not.dart';
+import 'root_schema_on_push_not2.dart';
+import 'root_schema_on_push_not3.dart';
 import 'validation_error.dart';
 
 /// The name of the GitHub event that triggers the workflow. You can provide a single event string, array of events, array of event types, or an event configuration map that schedules a workflow or restricts the execution of a workflow to specific files, tags, or branch changes. For a list of available events, see https://help.github.com/en/github/automating-your-workflow-with-github-actions/events-that-trigger-workflows.
