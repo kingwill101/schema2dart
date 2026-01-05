@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 
 void main() {
   group('Reserved Keywords', () {
@@ -25,21 +25,24 @@ void main() {
       final result = generator.generate(schema);
 
       expect(result, isNotEmpty);
-      
+
       // Check that reserved words have underscore suffix
       expect(result, contains('final String class_;'));
       expect(result, contains('final String? const_;'));
       expect(result, contains('final bool? if_;'));
       expect(result, contains('final int? for_;'));
       expect(result, contains('final String? while_;'));
-      expect(result, contains('final double? return_;')); // number becomes double
+      expect(
+        result,
+        contains('final double? return_;'),
+      ); // number becomes double
       expect(result, contains('final String name;'));
 
       // Check constructor
       expect(result, contains('required this.class_'));
       expect(result, contains('this.const_'));
       expect(result, contains('this.if_'));
-      
+
       // Check fromJson uses correct JSON keys
       expect(result, contains("json['class']"));
       expect(result, contains("json['const']"));
@@ -47,7 +50,7 @@ void main() {
       expect(result, contains("json['for']"));
       expect(result, contains("json['while']"));
       expect(result, contains("json['return']"));
-      
+
       // Check toJson uses correct JSON keys
       expect(result, contains("map['class'] = class_"));
       expect(result, contains("map['const'] = const_"));
@@ -56,13 +59,43 @@ void main() {
 
     test('handles all Dart reserved keywords', () {
       const reservedKeywords = [
-        'abstract', 'as', 'assert', 'async', 'await',
-        'break', 'case', 'catch', 'class', 'const',
-        'continue', 'default', 'do', 'else', 'enum',
-        'extends', 'factory', 'false', 'final', 'for',
-        'if', 'import', 'in', 'is', 'new', 'null',
-        'return', 'super', 'switch', 'this', 'throw',
-        'true', 'try', 'var', 'void', 'while', 'with',
+        'abstract',
+        'as',
+        'assert',
+        'async',
+        'await',
+        'break',
+        'case',
+        'catch',
+        'class',
+        'const',
+        'continue',
+        'default',
+        'do',
+        'else',
+        'enum',
+        'extends',
+        'factory',
+        'false',
+        'final',
+        'for',
+        'if',
+        'import',
+        'in',
+        'is',
+        'new',
+        'null',
+        'return',
+        'super',
+        'switch',
+        'this',
+        'throw',
+        'true',
+        'try',
+        'var',
+        'void',
+        'while',
+        'with',
       ];
 
       final properties = <String, dynamic>{};
@@ -82,11 +115,14 @@ void main() {
       final result = generator.generate(schema);
 
       expect(result, isNotEmpty);
-      
+
       // All reserved keywords should have underscore suffix
       for (final keyword in reservedKeywords) {
-        expect(result, contains('final String? ${keyword}_'),
-            reason: 'Expected "$keyword" to be renamed to "${keyword}_"');
+        expect(
+          result,
+          contains('final String? ${keyword}_'),
+          reason: 'Expected "$keyword" to be renamed to "${keyword}_"',
+        );
       }
     });
 
@@ -109,7 +145,7 @@ void main() {
       // Verify fromJson logic
       expect(result, contains("final class_ = json['class'] as String"));
       expect(result, contains("final if_ = json['if'] as bool?"));
-      
+
       // Verify toJson logic
       expect(result, contains("map['class'] = class_"));
       expect(result, contains("if (if_ != null) map['if'] = if_"));

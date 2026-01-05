@@ -9,11 +9,11 @@ const oneOfSchema = {
       "type": "object",
       "properties": {
         "id": {"type": "string"},
-        "name": {"type": "string"}
+        "name": {"type": "string"},
       },
-      "required": ["id"]
-    }
-  ]
+      "required": ["id"],
+    },
+  ],
 };
 
 // This generates a sealed class hierarchy:
@@ -42,7 +42,7 @@ void demonstrateExhaustiveMatching() {
   print('1. Type safety - compiler ensures all cases handled');
   print('2. Exhaustiveness - no missing cases');
   print('3. Pattern matching - elegant switch expressions');
-  
+
   // Pattern matching example:
   /*
   String describe(Value v) => switch (v) {
@@ -68,10 +68,10 @@ void demonstrateAnyOf() {
   const anyOfSchema = {
     "anyOf": [
       {"type": "string", "minLength": 5},
-      {"type": "string", "pattern": r"^\d+$"}
-    ]
+      {"type": "string", "pattern": r"^\d+$"},
+    ],
   };
-  
+
   print('\nanyOf is handled similarly to oneOf');
   print('Generates sealed class unions for type safety');
   print('anyOf schema example: $anyOfSchema');
@@ -85,23 +85,25 @@ void demonstrateDiscriminatedUnions() {
         "type": "object",
         "properties": {
           "type": {"const": "circle"},
-          "radius": {"type": "number"}
+          "radius": {"type": "number"},
         },
-        "required": ["type", "radius"]
+        "required": ["type", "radius"],
       },
       {
         "type": "object",
         "properties": {
           "type": {"const": "rectangle"},
           "width": {"type": "number"},
-          "height": {"type": "number"}
+          "height": {"type": "number"},
         },
-        "required": ["type", "width", "height"]
-      }
-    ]
+        "required": ["type", "width", "height"],
+      },
+    ],
   };
-  
-  print('\nDiscriminated unions use const values for efficient deserialization');
+
+  print(
+    '\nDiscriminated unions use const values for efficient deserialization',
+  );
   print('Pattern matching on sealed classes provides type-safe access');
   print('Discriminated schema example: $discriminatedSchema');
 }
@@ -110,6 +112,6 @@ void main() {
   demonstrateExhaustiveMatching();
   demonstrateAnyOf();
   demonstrateDiscriminatedUnions();
-  
+
   print('\n✨ Sealed unions are a major advantage over dynamic typing!');
 }

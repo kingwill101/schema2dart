@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -20,8 +20,16 @@ void main() {
       // Should contain usage instructions
       expect(generated, contains('// To parse JSON data:'));
       expect(generated, contains("//     import 'dart:convert';"));
-      expect(generated, contains('//     final obj = ClassName.fromJson(jsonDecode(jsonString));'));
-      expect(generated, contains('//     final jsonString = jsonEncode(obj.toJson());'));
+      expect(
+        generated,
+        contains(
+          '//     final obj = ClassName.fromJson(jsonDecode(jsonString));',
+        ),
+      );
+      expect(
+        generated,
+        contains('//     final jsonString = jsonEncode(obj.toJson());'),
+      );
     });
 
     test('includes helper function docs when helpers are enabled', () {
@@ -43,8 +51,14 @@ void main() {
 
       // Should contain helper function usage
       expect(generated, contains('// Or use the helper functions:'));
-      expect(generated, contains('//     final obj = classNameFromJson(jsonString);'));
-      expect(generated, contains('//     final jsonString = classNameToJson(obj);'));
+      expect(
+        generated,
+        contains('//     final obj = classNameFromJson(jsonString);'),
+      );
+      expect(
+        generated,
+        contains('//     final jsonString = classNameToJson(obj);'),
+      );
     });
 
     test('does not generate usage docs when option is disabled', () {

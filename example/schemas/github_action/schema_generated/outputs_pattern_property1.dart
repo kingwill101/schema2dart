@@ -9,9 +9,7 @@ class OutputsPatternProperty1 {
   /// A string description of the output parameter.
   final String description;
 
-  const OutputsPatternProperty1({
-    required this.description,
-  });
+  const OutputsPatternProperty1({required this.description});
 
   factory OutputsPatternProperty1.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
@@ -22,9 +20,7 @@ class OutputsPatternProperty1 {
       final unexpected = unmatched.keys.join(', ');
       throw ArgumentError('Unexpected additional properties: $unexpected');
     }
-    return OutputsPatternProperty1(
-      description: description,
-    );
+    return OutputsPatternProperty1(description: description);
   }
 
   Map<String, dynamic> toJson() {

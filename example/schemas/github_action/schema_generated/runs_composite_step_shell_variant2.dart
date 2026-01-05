@@ -6,20 +6,20 @@ enum RunsCompositeStepShellVariant2 { bash, pwsh, python, sh, cmd, powershell }
 
 extension RunsCompositeStepShellVariant2Json on RunsCompositeStepShellVariant2 {
   String toJson() => const {
-        RunsCompositeStepShellVariant2.bash: 'bash',
-        RunsCompositeStepShellVariant2.pwsh: 'pwsh',
-        RunsCompositeStepShellVariant2.python: 'python',
-        RunsCompositeStepShellVariant2.sh: 'sh',
-        RunsCompositeStepShellVariant2.cmd: 'cmd',
-        RunsCompositeStepShellVariant2.powershell: 'powershell',
-      }[this]!;
+    RunsCompositeStepShellVariant2.bash: 'bash',
+    RunsCompositeStepShellVariant2.pwsh: 'pwsh',
+    RunsCompositeStepShellVariant2.python: 'python',
+    RunsCompositeStepShellVariant2.sh: 'sh',
+    RunsCompositeStepShellVariant2.cmd: 'cmd',
+    RunsCompositeStepShellVariant2.powershell: 'powershell',
+  }[this]!;
 
   static RunsCompositeStepShellVariant2 fromJson(String value) => const {
-        'bash': RunsCompositeStepShellVariant2.bash,
-        'pwsh': RunsCompositeStepShellVariant2.pwsh,
-        'python': RunsCompositeStepShellVariant2.python,
-        'sh': RunsCompositeStepShellVariant2.sh,
-        'cmd': RunsCompositeStepShellVariant2.cmd,
-        'powershell': RunsCompositeStepShellVariant2.powershell,
-      }[value]!;
+    'bash': RunsCompositeStepShellVariant2.bash,
+    'pwsh': RunsCompositeStepShellVariant2.pwsh,
+    'python': RunsCompositeStepShellVariant2.python,
+    'sh': RunsCompositeStepShellVariant2.sh,
+    'cmd': RunsCompositeStepShellVariant2.cmd,
+    'powershell': RunsCompositeStepShellVariant2.powershell,
+  }[value]!;
 }

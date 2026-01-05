@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -8,9 +8,7 @@ void main() {
         'type': 'object',
         'properties': {
           'value': {
-            'not': {
-              'type': 'null',
-            },
+            'not': {'type': 'null'},
           },
         },
       };

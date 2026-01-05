@@ -6,20 +6,20 @@ enum ShellString { bash, pwsh, python, sh, cmd, powershell }
 
 extension ShellStringJson on ShellString {
   String toJson() => const {
-        ShellString.bash: 'bash',
-        ShellString.pwsh: 'pwsh',
-        ShellString.python: 'python',
-        ShellString.sh: 'sh',
-        ShellString.cmd: 'cmd',
-        ShellString.powershell: 'powershell',
-      }[this]!;
+    ShellString.bash: 'bash',
+    ShellString.pwsh: 'pwsh',
+    ShellString.python: 'python',
+    ShellString.sh: 'sh',
+    ShellString.cmd: 'cmd',
+    ShellString.powershell: 'powershell',
+  }[this]!;
 
   static ShellString fromJson(String value) => const {
-        'bash': ShellString.bash,
-        'pwsh': ShellString.pwsh,
-        'python': ShellString.python,
-        'sh': ShellString.sh,
-        'cmd': ShellString.cmd,
-        'powershell': ShellString.powershell,
-      }[value]!;
+    'bash': ShellString.bash,
+    'pwsh': ShellString.pwsh,
+    'python': ShellString.python,
+    'sh': ShellString.sh,
+    'cmd': ShellString.cmd,
+    'powershell': ShellString.powershell,
+  }[value]!;
 }

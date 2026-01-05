@@ -1,4 +1,4 @@
-part of 'package:schema2model/src/generator.dart';
+part of 'package:schema2dart/src/generator.dart';
 
 class ObjectTypeRef extends TypeRef {
   const ObjectTypeRef(this.spec);
@@ -162,9 +162,7 @@ class ListTypeRef extends TypeRef {
     final buffer = StringBuffer('list:${itemType.identity}');
     if (prefixItemTypes.isNotEmpty) {
       buffer.write(':prefix[');
-      buffer.write(
-        prefixItemTypes.map((type) => type.identity).join(','),
-      );
+      buffer.write(prefixItemTypes.map((type) => type.identity).join(','));
       buffer.write(']');
     }
     if (containsType != null) {

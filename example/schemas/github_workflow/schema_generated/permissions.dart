@@ -5,13 +5,17 @@
 import 'permissions_level.dart';
 import 'permissions_object_models.dart';
 import 'permissions_string.dart';
+import 'validation_error.dart';
 
 /// You can modify the default permissions granted to the GITHUB_TOKEN, adding or removing access as required, so that you only allow the minimum required access.
 sealed class Permissions {
   const Permissions();
 
+  void validate({String pointer = '', ValidationContext? context});
+
   factory Permissions.fromJson(dynamic json) {
-    if (json is String) return PermissionsValue(PermissionsStringJson.fromJson(json));
+    if (json is String)
+      return PermissionsValue(PermissionsStringJson.fromJson(json));
     if (json is! Map<String, dynamic>) {
       throw ArgumentError('Invalid Permissions value: ${json.runtimeType}');
     }
@@ -22,6 +26,7 @@ sealed class Permissions {
 
   dynamic toJson();
 }
+
 class PermissionsValue extends Permissions {
   final PermissionsString value;
 
@@ -29,7 +34,11 @@ class PermissionsValue extends Permissions {
 
   @override
   dynamic toJson() => value.toJson();
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }
+
 class PermissionsObject extends Permissions {
   final PermissionsLevel? actions;
   final PermissionsLevel? attestations;
@@ -67,35 +76,65 @@ class PermissionsObject extends Permissions {
 
   factory PermissionsObject.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
-    final actions = json['actions'] == null ? null : PermissionsLevelJson.fromJson(json['actions'] as String);
+    final actions = json['actions'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['actions'] as String);
     remaining.remove('actions');
-    final attestations = json['attestations'] == null ? null : PermissionsLevelJson.fromJson(json['attestations'] as String);
+    final attestations = json['attestations'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['attestations'] as String);
     remaining.remove('attestations');
-    final checks = json['checks'] == null ? null : PermissionsLevelJson.fromJson(json['checks'] as String);
+    final checks = json['checks'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['checks'] as String);
     remaining.remove('checks');
-    final contents = json['contents'] == null ? null : PermissionsLevelJson.fromJson(json['contents'] as String);
+    final contents = json['contents'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['contents'] as String);
     remaining.remove('contents');
-    final deployments = json['deployments'] == null ? null : PermissionsLevelJson.fromJson(json['deployments'] as String);
+    final deployments = json['deployments'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['deployments'] as String);
     remaining.remove('deployments');
-    final discussions = json['discussions'] == null ? null : PermissionsLevelJson.fromJson(json['discussions'] as String);
+    final discussions = json['discussions'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['discussions'] as String);
     remaining.remove('discussions');
-    final idToken = json['id-token'] == null ? null : PermissionsLevelJson.fromJson(json['id-token'] as String);
+    final idToken = json['id-token'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['id-token'] as String);
     remaining.remove('id-token');
-    final issues = json['issues'] == null ? null : PermissionsLevelJson.fromJson(json['issues'] as String);
+    final issues = json['issues'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['issues'] as String);
     remaining.remove('issues');
-    final models = json['models'] == null ? null : PermissionsObjectModelsJson.fromJson(json['models'] as String);
+    final models = json['models'] == null
+        ? null
+        : PermissionsObjectModelsJson.fromJson(json['models'] as String);
     remaining.remove('models');
-    final packages = json['packages'] == null ? null : PermissionsLevelJson.fromJson(json['packages'] as String);
+    final packages = json['packages'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['packages'] as String);
     remaining.remove('packages');
-    final pages = json['pages'] == null ? null : PermissionsLevelJson.fromJson(json['pages'] as String);
+    final pages = json['pages'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['pages'] as String);
     remaining.remove('pages');
-    final pullRequests = json['pull-requests'] == null ? null : PermissionsLevelJson.fromJson(json['pull-requests'] as String);
+    final pullRequests = json['pull-requests'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['pull-requests'] as String);
     remaining.remove('pull-requests');
-    final repositoryProjects = json['repository-projects'] == null ? null : PermissionsLevelJson.fromJson(json['repository-projects'] as String);
+    final repositoryProjects = json['repository-projects'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['repository-projects'] as String);
     remaining.remove('repository-projects');
-    final securityEvents = json['security-events'] == null ? null : PermissionsLevelJson.fromJson(json['security-events'] as String);
+    final securityEvents = json['security-events'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['security-events'] as String);
     remaining.remove('security-events');
-    final statuses = json['statuses'] == null ? null : PermissionsLevelJson.fromJson(json['statuses'] as String);
+    final statuses = json['statuses'] == null
+        ? null
+        : PermissionsLevelJson.fromJson(json['statuses'] as String);
     remaining.remove('statuses');
     var unmatched = Map<String, dynamic>.from(remaining);
     if (unmatched.isNotEmpty) {
@@ -136,9 +175,14 @@ class PermissionsObject extends Permissions {
     if (packages != null) map['packages'] = packages!.toJson();
     if (pages != null) map['pages'] = pages!.toJson();
     if (pullRequests != null) map['pull-requests'] = pullRequests!.toJson();
-    if (repositoryProjects != null) map['repository-projects'] = repositoryProjects!.toJson();
-    if (securityEvents != null) map['security-events'] = securityEvents!.toJson();
+    if (repositoryProjects != null)
+      map['repository-projects'] = repositoryProjects!.toJson();
+    if (securityEvents != null)
+      map['security-events'] = securityEvents!.toJson();
     if (statuses != null) map['statuses'] = statuses!.toJson();
     return map;
   }
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }

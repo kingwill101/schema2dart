@@ -1,20 +1,20 @@
 import 'dart:convert';
 
-import 'package:schema2model_sample/schemas/todo_list.dart';
+import 'package:schema2dart_sample/schemas/todo_list.dart';
 
 void main() {
   final sample = TodoList(
     name: 'Weekend tasks',
     tags: const ['urgent: errands', 'urgent: groceries', 'urgent: repairs'],
     items: [
-      TodoListItem(title: 'Water plants'),
-      TodoListItem(title: 'Restock pantry'),
-      TodoListItem(title: 'Read a book', done: true),
+      Item(title: 'Water plants'),
+      Item(title: 'Restock pantry'),
+      Item(title: 'Read a book', done: true),
     ],
-    metadata: const TodoListMetadata(
+    metadata: const Metadata(
       owner: 'Morgan',
       color: '#3366FF',
-      reminder: TodoListMetadataReminder(
+      reminder: MetadataReminder(
         time: '2024-05-01T09:00:00Z',
         channel: 'email',
         timezone: 'America/New_York',

@@ -7,16 +7,16 @@ enum RunsJavascriptUsing { node12, node16, node20, node24 }
 
 extension RunsJavascriptUsingJson on RunsJavascriptUsing {
   String toJson() => const {
-        RunsJavascriptUsing.node12: 'node12',
-        RunsJavascriptUsing.node16: 'node16',
-        RunsJavascriptUsing.node20: 'node20',
-        RunsJavascriptUsing.node24: 'node24',
-      }[this]!;
+    RunsJavascriptUsing.node12: 'node12',
+    RunsJavascriptUsing.node16: 'node16',
+    RunsJavascriptUsing.node20: 'node20',
+    RunsJavascriptUsing.node24: 'node24',
+  }[this]!;
 
   static RunsJavascriptUsing fromJson(String value) => const {
-        'node12': RunsJavascriptUsing.node12,
-        'node16': RunsJavascriptUsing.node16,
-        'node20': RunsJavascriptUsing.node20,
-        'node24': RunsJavascriptUsing.node24,
-      }[value]!;
+    'node12': RunsJavascriptUsing.node12,
+    'node16': RunsJavascriptUsing.node16,
+    'node20': RunsJavascriptUsing.node20,
+    'node24': RunsJavascriptUsing.node24,
+  }[value]!;
 }

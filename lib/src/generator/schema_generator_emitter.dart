@@ -1,4 +1,4 @@
-part of 'package:schema2model/src/generator.dart';
+part of 'package:schema2dart/src/generator.dart';
 
 class _SchemaEmitter {
   _SchemaEmitter(this.options);
@@ -58,7 +58,7 @@ class _SchemaEmitter {
   String renderLibrary(SchemaIr ir) {
     setUnions(ir.unions);
     final buffer = StringBuffer();
-    
+
     // Check if any property uses ContentEncodedTypeRef and add required imports/helpers
     final requiredEncodings = _getRequiredEncodings(ir);
     final needsContentValidation = _needsContentValidation(ir);
@@ -68,7 +68,7 @@ class _SchemaEmitter {
     if (requiredEncodings.isNotEmpty) {
       buffer.writeln("import 'dart:typed_data';");
       buffer.writeln();
-      
+
       // Add helper functions for non-base64 encodings
       if (requiredEncodings.contains('base16')) {
         buffer.writeln(_base16Helpers);
@@ -83,7 +83,7 @@ class _SchemaEmitter {
         buffer.writeln();
       }
     }
-    
+
     for (var i = 0; i < ir.classes.length; i++) {
       buffer.write(renderClass(ir.classes[i]));
       final isLastClass = i == ir.classes.length - 1;
@@ -99,7 +99,9 @@ class _SchemaEmitter {
       if (i != ir.enums.length - 1 || ir.mixedEnums.isNotEmpty) {
         buffer.writeln();
       }
-      if (ir.helpers.isNotEmpty && i == ir.enums.length - 1 && ir.mixedEnums.isEmpty) {
+      if (ir.helpers.isNotEmpty &&
+          i == ir.enums.length - 1 &&
+          ir.mixedEnums.isEmpty) {
         buffer.writeln();
       }
     }
@@ -125,12 +127,12 @@ class _SchemaEmitter {
         }
       }
     }
-    
+
     // Generate optional helper functions for root class
     if (options.generateHelpers) {
       final rootClassName = ir.rootClass.name;
       final funcPrefix = _Naming.fieldName(rootClassName);
-      
+
       // Ensure dart:convert is imported
       if (!buffer.toString().contains("import 'dart:convert'")) {
         // Insert import at the top if needed
@@ -140,17 +142,21 @@ class _SchemaEmitter {
         buffer.writeln();
         buffer.write(content);
       }
-      
+
       buffer.writeln();
-      buffer.writeln('/// Parses [str] as JSON and deserializes it into a [$rootClassName].');
+      buffer.writeln(
+        '/// Parses [str] as JSON and deserializes it into a [$rootClassName].',
+      );
       buffer.writeln('$rootClassName ${funcPrefix}FromJson(String str) =>');
-      buffer.writeln('    $rootClassName.fromJson(json.decode(str) as Map<String, dynamic>);');
+      buffer.writeln(
+        '    $rootClassName.fromJson(json.decode(str) as Map<String, dynamic>);',
+      );
       buffer.writeln();
       buffer.writeln('/// Serializes [data] into a JSON string.');
       buffer.writeln('String ${funcPrefix}ToJson($rootClassName data) =>');
       buffer.writeln('    json.encode(data.toJson());');
     }
-    
+
     return buffer.toString();
   }
 
@@ -230,12 +236,10 @@ class _SchemaEmitter {
       );
       buffer.writeln();
     }
-    
+
     // Use dynamic parameter if we have primitive variants
     final paramType = hasPrimitiveVariants ? 'dynamic' : 'Map<String, dynamic>';
-    buffer.writeln(
-      '  factory ${klass.name}.fromJson($paramType json) {',
-    );
+    buffer.writeln('  factory ${klass.name}.fromJson($paramType json) {');
 
     // For unions with primitive variants, try runtime type checking first
     if (hasPrimitiveVariants) {
@@ -244,17 +248,29 @@ class _SchemaEmitter {
         if (primitiveType is PrimitiveTypeRef) {
           switch (primitiveType.typeName) {
             case 'Null':
-              buffer.writeln('    if (json == null) return ${variant.classSpec.name}(null);');
+              buffer.writeln(
+                '    if (json == null) return ${variant.classSpec.name}(null);',
+              );
             case 'String':
-              buffer.writeln('    if (json is String) return ${variant.classSpec.name}(json);');
+              buffer.writeln(
+                '    if (json is String) return ${variant.classSpec.name}(json);',
+              );
             case 'int':
-              buffer.writeln('    if (json is int) return ${variant.classSpec.name}(json);');
+              buffer.writeln(
+                '    if (json is int) return ${variant.classSpec.name}(json);',
+              );
             case 'num':
-              buffer.writeln('    if (json is num) return ${variant.classSpec.name}(json);');
+              buffer.writeln(
+                '    if (json is num) return ${variant.classSpec.name}(json);',
+              );
             case 'double':
-              buffer.writeln('    if (json is num) return ${variant.classSpec.name}(json.toDouble());');
+              buffer.writeln(
+                '    if (json is num) return ${variant.classSpec.name}(json.toDouble());',
+              );
             case 'bool':
-              buffer.writeln('    if (json is bool) return ${variant.classSpec.name}(json);');
+              buffer.writeln(
+                '    if (json is bool) return ${variant.classSpec.name}(json);',
+              );
           }
         } else if (primitiveType is EnumTypeRef) {
           buffer.writeln(
@@ -274,7 +290,7 @@ class _SchemaEmitter {
           );
         }
       }
-      
+
       // If we have object variants, check if json is a Map
       if (hasObjectVariants) {
         buffer.writeln('    if (json is! Map<String, dynamic>) {');
@@ -315,7 +331,10 @@ class _SchemaEmitter {
 
       // Only process const/required variants for object variants
       final constVariants = union.variants
-          .where((variant) => !variant.isPrimitive && variant.constProperties.isNotEmpty)
+          .where(
+            (variant) =>
+                !variant.isPrimitive && variant.constProperties.isNotEmpty,
+          )
           .toList();
       if (constVariants.isNotEmpty) {
         buffer.writeln(
@@ -343,66 +362,73 @@ class _SchemaEmitter {
         buffer.writeln('    }');
         buffer.writeln('    if (constMatches.length > 1) {');
         buffer.writeln(
-            "      throw ArgumentError('Ambiguous ${klass.name} variant matched const heuristics: \${constMatchNames.join(', ')}');",
-          );
-          buffer.writeln('    }');
-        }
+          "      throw ArgumentError('Ambiguous ${klass.name} variant matched const heuristics: \${constMatchNames.join(', ')}');",
+        );
+        buffer.writeln('    }');
+      }
 
-        final requiredVariants = union.variants
-            .where((variant) => !variant.isPrimitive && variant.requiredProperties.isNotEmpty)
-            .toList();
-        if (requiredVariants.isNotEmpty) {
-          buffer.writeln(
-            '    final requiredMatches = <${klass.name} Function(Map<String, dynamic>)>[];',
-          );
-          buffer.writeln("    final requiredMatchNames = <String>[];");
-          for (final variant in requiredVariants) {
-            final conditions = variant.requiredProperties
-                .map((prop) {
-                  return "keys.contains('$prop')";
-                })
-                .join(' && ');
-            buffer.writeln('    if ($conditions) {');
-            buffer.writeln(
-              '      requiredMatches.add(${variant.classSpec.name}.fromJson);',
-            );
-            buffer.writeln(
-              "      requiredMatchNames.add('${variant.classSpec.name}');",
-            );
-            buffer.writeln('    }');
-          }
-          buffer.writeln('    if (requiredMatches.length == 1) {');
-          buffer.writeln('      return requiredMatches.single(json);');
-          buffer.writeln('    }');
-          buffer.writeln('    if (requiredMatches.length > 1) {');
-          buffer.writeln(
-            "      throw ArgumentError('Ambiguous ${klass.name} variant matched required-property heuristics: \${requiredMatchNames.join(', ')}');",
-          );
-          buffer.writeln('    }');
-        }
-
-        final objectVariants = union.variants.where((v) => !v.isPrimitive).toList();
-        if (objectVariants.length == 1) {
-          buffer.writeln(
-            '    return ${objectVariants.single.classSpec.name}.fromJson(json);',
-          );
-        } else if (objectVariants.isNotEmpty) {
-          buffer.writeln(
-            "    throw ArgumentError('No ${klass.name} variant matched heuristics (keys: \${sortedKeys.join(', ')}).');",
-          );
-        }
-      } else {
-        // No object variants, only primitives  - should not reach here due to early returns
+      final requiredVariants = union.variants
+          .where(
+            (variant) =>
+                !variant.isPrimitive && variant.requiredProperties.isNotEmpty,
+          )
+          .toList();
+      if (requiredVariants.isNotEmpty) {
         buffer.writeln(
-          "    throw ArgumentError('Invalid ${klass.name} value type: \${json.runtimeType}');",
+          '    final requiredMatches = <${klass.name} Function(Map<String, dynamic>)>[];',
+        );
+        buffer.writeln("    final requiredMatchNames = <String>[];");
+        for (final variant in requiredVariants) {
+          final conditions = variant.requiredProperties
+              .map((prop) {
+                return "keys.contains('$prop')";
+              })
+              .join(' && ');
+          buffer.writeln('    if ($conditions) {');
+          buffer.writeln(
+            '      requiredMatches.add(${variant.classSpec.name}.fromJson);',
+          );
+          buffer.writeln(
+            "      requiredMatchNames.add('${variant.classSpec.name}');",
+          );
+          buffer.writeln('    }');
+        }
+        buffer.writeln('    if (requiredMatches.length == 1) {');
+        buffer.writeln('      return requiredMatches.single(json);');
+        buffer.writeln('    }');
+        buffer.writeln('    if (requiredMatches.length > 1) {');
+        buffer.writeln(
+          "      throw ArgumentError('Ambiguous ${klass.name} variant matched required-property heuristics: \${requiredMatchNames.join(', ')}');",
+        );
+        buffer.writeln('    }');
+      }
+
+      final objectVariants = union.variants
+          .where((v) => !v.isPrimitive)
+          .toList();
+      if (objectVariants.length == 1) {
+        buffer.writeln(
+          '    return ${objectVariants.single.classSpec.name}.fromJson(json);',
+        );
+      } else if (objectVariants.isNotEmpty) {
+        buffer.writeln(
+          "    throw ArgumentError('No ${klass.name} variant matched heuristics (keys: \${sortedKeys.join(', ')}).');",
         );
       }
+    } else {
+      // No object variants, only primitives  - should not reach here due to early returns
+      buffer.writeln(
+        "    throw ArgumentError('Invalid ${klass.name} value type: \${json.runtimeType}');",
+      );
+    }
 
     buffer.writeln('  }');
     buffer.writeln();
-    
+
     // Use dynamic return type if we have primitive variants
-    final returnType = hasPrimitiveVariants ? 'dynamic' : 'Map<String, dynamic>';
+    final returnType = hasPrimitiveVariants
+        ? 'dynamic'
+        : 'Map<String, dynamic>';
     buffer.writeln('  $returnType toJson();');
     buffer.writeln('}');
     return buffer.toString();
@@ -419,13 +445,13 @@ class _SchemaEmitter {
     }
 
     buffer.writeln('class ${klass.name} extends ${union.baseClass.name} {');
-    
+
     // Handle primitive variants
     if (variant.isPrimitive) {
       final primitiveType = variant.primitiveType!;
       final dartType = primitiveType.dartType();
       final serialized = primitiveType.serializeInline('value', required: true);
-      
+
       // Add value field for primitive wrapper
       buffer.writeln('  final $dartType value;');
       buffer.writeln();
@@ -433,6 +459,10 @@ class _SchemaEmitter {
       buffer.writeln();
       buffer.writeln('  @override');
       buffer.writeln('  dynamic toJson() => $serialized;');
+      if (options.emitValidationHelpers) {
+        buffer.writeln();
+        _writeValidate(buffer, klass, override: true);
+      }
     } else {
       // Handle object variants (existing logic)
       _writeFieldDeclarations(buffer, klass);
@@ -457,7 +487,7 @@ class _SchemaEmitter {
         _writeValidate(buffer, klass, override: true);
       }
     }
-    
+
     buffer.writeln('}');
     return buffer.toString();
   }
@@ -506,23 +536,35 @@ class _SchemaEmitter {
     buffer.writeln('  const ${mixedEnum.name}();');
     buffer.writeln();
     buffer.writeln('  factory ${mixedEnum.name}.fromJson(dynamic json) {');
-    
+
     // Generate type checks for each variant
     for (final variant in mixedEnum.variants) {
       if (variant.dartType == 'null') {
-        buffer.writeln('    if (json == null) return const ${variant.className}();');
+        buffer.writeln(
+          '    if (json == null) return const ${variant.className}();',
+        );
       } else if (variant.dartType == 'String') {
-        buffer.writeln('    if (json is String) return ${variant.className}(json);');
+        buffer.writeln(
+          '    if (json is String) return ${variant.className}(json);',
+        );
       } else if (variant.dartType == 'int') {
-        buffer.writeln('    if (json is int) return ${variant.className}(json);');
+        buffer.writeln(
+          '    if (json is int) return ${variant.className}(json);',
+        );
       } else if (variant.dartType == 'double') {
-        buffer.writeln('    if (json is double) return ${variant.className}(json);');
+        buffer.writeln(
+          '    if (json is double) return ${variant.className}(json);',
+        );
       } else if (variant.dartType == 'bool') {
-        buffer.writeln('    if (json is bool) return ${variant.className}(json);');
+        buffer.writeln(
+          '    if (json is bool) return ${variant.className}(json);',
+        );
       }
     }
-    
-    buffer.writeln('    throw Exception(\'Unknown ${mixedEnum.name} type: \${json.runtimeType}\');');
+
+    buffer.writeln(
+      '    throw Exception(\'Unknown ${mixedEnum.name} type: \${json.runtimeType}\');',
+    );
     buffer.writeln('  }');
     buffer.writeln();
     buffer.writeln('  dynamic toJson();');
@@ -532,14 +574,18 @@ class _SchemaEmitter {
     // Generate variant classes
     for (final variant in mixedEnum.variants) {
       if (variant.dartType == 'null') {
-        buffer.writeln('class ${variant.className} extends ${mixedEnum.name} {');
+        buffer.writeln(
+          'class ${variant.className} extends ${mixedEnum.name} {',
+        );
         buffer.writeln('  const ${variant.className}();');
         buffer.writeln();
         buffer.writeln('  @override');
         buffer.writeln('  dynamic toJson() => null;');
         buffer.writeln('}');
       } else {
-        buffer.writeln('class ${variant.className} extends ${mixedEnum.name} {');
+        buffer.writeln(
+          'class ${variant.className} extends ${mixedEnum.name} {',
+        );
         buffer.writeln('  const ${variant.className}(this.value);');
         buffer.writeln();
         buffer.writeln('  final ${variant.dartType} value;');
@@ -582,6 +628,9 @@ class _SchemaEmitter {
     if (typeRef is ValidatedTypeRef) {
       return _defaultLiteralForType(typeRef.inner, value);
     }
+    if (typeRef is ApplicatorTypeRef) {
+      return _defaultLiteralForType(typeRef.inner, value);
+    }
     if (typeRef is ObjectTypeRef) {
       final union = _unionByBaseName[typeRef.spec.name];
       if (union != null) {
@@ -600,10 +649,7 @@ class _SchemaEmitter {
     return _valueToLiteral(value);
   }
 
-  IrUnionVariant? _selectUnionVariantForDefault(
-    IrUnion union,
-    Object? value,
-  ) {
+  IrUnionVariant? _selectUnionVariantForDefault(IrUnion union, Object? value) {
     if (value == null) {
       return union.variants.firstWhereOrNull(
         (variant) =>
@@ -665,7 +711,7 @@ class _SchemaEmitter {
     }
     return null;
   }
-  
+
   String? _valueToLiteral(Object? value) {
     if (value == null) {
       return 'null';
@@ -677,15 +723,19 @@ class _SchemaEmitter {
       return _stringLiteral(value);
     }
     if (value is List) {
-      final items = value.map((item) => _valueToLiteral(item) ?? 'null').join(', ');
+      final items = value
+          .map((item) => _valueToLiteral(item) ?? 'null')
+          .join(', ');
       return 'const [$items]';
     }
     if (value is Map) {
-      final entries = value.entries.map((entry) {
-        final key = _stringLiteral(entry.key.toString());
-        final val = _valueToLiteral(entry.value) ?? 'null';
-        return '$key: $val';
-      }).join(', ');
+      final entries = value.entries
+          .map((entry) {
+            final key = _stringLiteral(entry.key.toString());
+            final val = _valueToLiteral(entry.value) ?? 'null';
+            return '$key: $val';
+          })
+          .join(', ');
       return 'const {$entries}';
     }
     return null;
@@ -719,10 +769,14 @@ class _SchemaEmitter {
         _writeDocumentation(buffer, property.description!, indent: '  ');
       }
       if (property.isReadOnly) {
-        buffer.writeln('  /// READ-ONLY: This property is managed by the server and should not be sent in requests.');
+        buffer.writeln(
+          '  /// READ-ONLY: This property is managed by the server and should not be sent in requests.',
+        );
       }
       if (property.isWriteOnly) {
-        buffer.writeln('  /// WRITE-ONLY: This property should not be included in responses (e.g., passwords, secrets).');
+        buffer.writeln(
+          '  /// WRITE-ONLY: This property should not be included in responses (e.g., passwords, secrets).',
+        );
       }
       if (property.validation != null && property.validation!.hasRules) {
         final constraints = _formatValidationConstraints(property.validation!);
@@ -774,12 +828,12 @@ class _SchemaEmitter {
 
   String _formatValidationConstraints(PropertyValidationRules rules) {
     final parts = <String>[];
-    
+
     // String constraints
     if (rules.minLength != null) parts.add('minLength: ${rules.minLength}');
     if (rules.maxLength != null) parts.add('maxLength: ${rules.maxLength}');
     if (rules.pattern != null) parts.add('pattern: ${rules.pattern}');
-    
+
     // Numeric constraints
     if (rules.minimum != null) {
       if (rules.exclusiveMinimum) {
@@ -796,14 +850,14 @@ class _SchemaEmitter {
       }
     }
     if (rules.multipleOf != null) parts.add('multipleOf: ${rules.multipleOf}');
-    
+
     // Array constraints
     if (rules.minItems != null) parts.add('minItems: ${rules.minItems}');
     if (rules.maxItems != null) parts.add('maxItems: ${rules.maxItems}');
     if (rules.uniqueItems != null && rules.uniqueItems!) {
       parts.add('uniqueItems: true');
     }
-    
+
     // Object constraints
     if (rules.minProperties != null) {
       parts.add('minProperties: ${rules.minProperties}');
@@ -811,7 +865,7 @@ class _SchemaEmitter {
     if (rules.maxProperties != null) {
       parts.add('maxProperties: ${rules.maxProperties}');
     }
-    
+
     // Const value
     if (rules.constValue != null) {
       parts.add('const: ${rules.constValue}');
@@ -824,7 +878,7 @@ class _SchemaEmitter {
     if (rules.format != null) {
       parts.add('format: ${rules.format}');
     }
-    
+
     return parts.join(', ');
   }
 
@@ -1541,17 +1595,13 @@ class _SchemaEmitter {
     final encoding = property.contentEncoding;
     if (encoding != null && encoding.isNotEmpty) {
       if (property.typeRef is ContentEncodedTypeRef) {
-        buffer.writeln(
-          '$indent final $decodedVar = utf8.decode($valueVar);',
-        );
+        buffer.writeln('$indent final $decodedVar = utf8.decode($valueVar);');
       } else {
         final decodeExpr = _contentDecodeExpression(encoding, valueVar);
         if (decodeExpr == null) {
           return;
         }
-        buffer.writeln(
-          '$indent final $decodedVar = utf8.decode($decodeExpr);',
-        );
+        buffer.writeln('$indent final $decodedVar = utf8.decode($decodeExpr);');
       }
     } else {
       buffer.writeln('$indent final $decodedVar = $valueVar;');
@@ -1629,7 +1679,11 @@ class _SchemaEmitter {
   }) {
     final baseRef = _unwrapValidated(ref);
     if (rules.allowedTypes != null && rules.allowedTypes!.isNotEmpty) {
-      final condition = _allowedTypesCondition(baseRef, rules.allowedTypes!, valueVar);
+      final condition = _allowedTypesCondition(
+        baseRef,
+        rules.allowedTypes!,
+        valueVar,
+      );
       final allowedList = rules.allowedTypes!.join(', ');
       buffer.writeln('$indent if (!($condition)) {');
       final message = _stringLiteral(
@@ -1641,8 +1695,11 @@ class _SchemaEmitter {
       buffer.writeln('$indent }');
     }
     if (rules.format != null) {
-      final condition =
-          _formatValidationCondition(baseRef, rules.format!, valueVar);
+      final condition = _formatValidationCondition(
+        baseRef,
+        rules.format!,
+        valueVar,
+      );
       if (condition != null) {
         buffer.writeln('$indent if ($condition) {');
         final message = _stringLiteral(
@@ -1797,9 +1854,7 @@ class _SchemaEmitter {
       final countVar = '_propertyCount$suffix';
       buffer.writeln('${indent}final $countVar = $valueVar.toJson().length;');
       if (rules.minProperties != null) {
-        buffer.writeln(
-          '${indent}if ($countVar < ${rules.minProperties}) {',
-        );
+        buffer.writeln('${indent}if ($countVar < ${rules.minProperties}) {');
         final message = _stringLiteral(
           'Expected at least ${rules.minProperties} properties but found ',
         );
@@ -1809,9 +1864,7 @@ class _SchemaEmitter {
         buffer.writeln('$indent}');
       }
       if (rules.maxProperties != null) {
-        buffer.writeln(
-          '${indent}if ($countVar > ${rules.maxProperties}) {',
-        );
+        buffer.writeln('${indent}if ($countVar > ${rules.maxProperties}) {');
         final message = _stringLiteral(
           'Expected at most ${rules.maxProperties} properties but found ',
         );
@@ -2053,10 +2106,14 @@ class _SchemaEmitter {
         final minContains =
             ref.minContains ?? (ref.containsType != null ? 1 : null);
         final maxContains = ref.maxContains;
-        buffer.writeln('$indent'
-            'var $containsCountVar = 0;');
-        buffer.writeln('$indent'
-            'for (var i = 0; i < $lengthVar; i++) {');
+        buffer.writeln(
+          '$indent'
+          'var $containsCountVar = 0;',
+        );
+        buffer.writeln(
+          '$indent'
+          'for (var i = 0; i < $lengthVar; i++) {',
+        );
         buffer.writeln(
           '$indent  final itemPointer = appendJsonPointer($pointerExpression, i.toString());',
         );
@@ -2084,22 +2141,24 @@ class _SchemaEmitter {
         buffer.writeln(
           '$indent    if (!$evaluatedVar[i]) { $evaluatedVar[i] = true; }',
         );
-        buffer.writeln(
-          '$indent    context?.markItem($pointerExpression, i);',
-        );
+        buffer.writeln('$indent    context?.markItem($pointerExpression, i);');
         buffer.writeln('$indent  }');
         buffer.writeln('$indent}');
         if (minContains != null) {
-          buffer.writeln('$indent'
-              'if ($containsCountVar < $minContains) {');
+          buffer.writeln(
+            '$indent'
+            'if ($containsCountVar < $minContains) {',
+          );
           buffer.writeln(
             '$indent  throwValidationError($pointerExpression, \'contains\', ${_stringLiteral('Expected at least $minContains item(s) matching "contains" but found ')} + $containsCountVar.toString() + \'.\');',
           );
           buffer.writeln('$indent}');
         }
         if (maxContains != null) {
-          buffer.writeln('$indent'
-              'if ($containsCountVar > $maxContains) {');
+          buffer.writeln(
+            '$indent'
+            'if ($containsCountVar > $maxContains) {',
+          );
           buffer.writeln(
             '$indent  throwValidationError($pointerExpression, \'contains\', ${_stringLiteral('Expected at most $maxContains item(s) matching "contains" but found ')} + $containsCountVar.toString() + \'.\');',
           );
@@ -2167,24 +2226,29 @@ class _SchemaEmitter {
     );
     buffer.writeln('$indent final $jsonVar = $jsonExpression;');
 
-    for (var constraintIndex = 0;
-        constraintIndex < ref.constraints.length;
-        constraintIndex++) {
+    for (
+      var constraintIndex = 0;
+      constraintIndex < ref.constraints.length;
+      constraintIndex++
+    ) {
       final constraint = ref.constraints[constraintIndex];
       final matchVars = <String>[];
       final contextVars = <String>[];
 
-      for (var branchIndex = 0;
-          branchIndex < constraint.branches.length;
-          branchIndex++) {
+      for (
+        var branchIndex = 0;
+        branchIndex < constraint.branches.length;
+        branchIndex++
+      ) {
         final branch = constraint.branches[branchIndex];
         final matchVar = '_constraint${suffix}m${constraintIndex}_$branchIndex';
         final contextVar =
             '_constraint${suffix}c${constraintIndex}_$branchIndex';
-        final valueVar =
-            '_constraint${suffix}v${constraintIndex}_$branchIndex';
+        final valueVar = '_constraint${suffix}v${constraintIndex}_$branchIndex';
 
-        buffer.writeln('$indent final $contextVar = context == null ? null : ValidationContext();');
+        buffer.writeln(
+          '$indent final $contextVar = context == null ? null : ValidationContext();',
+        );
         buffer.writeln('$indent var $matchVar = false;');
         buffer.writeln('$indent try {');
         buffer.writeln('$indent  final context = $contextVar;');
@@ -2219,9 +2283,11 @@ class _SchemaEmitter {
             '$indent  throwValidationError($pointerExpression, \'allOf\', ${_stringLiteral('Expected all subschemas in ${constraint.schemaPointer} to validate.')});',
           );
           buffer.writeln('$indent }');
-          for (var branchIndex = 0;
-              branchIndex < matchVars.length;
-              branchIndex++) {
+          for (
+            var branchIndex = 0;
+            branchIndex < matchVars.length;
+            branchIndex++
+          ) {
             buffer.writeln(
               '$indent if (context != null && ${matchVars[branchIndex]} && ${contextVars[branchIndex]} != null) {',
             );
@@ -2237,9 +2303,11 @@ class _SchemaEmitter {
             '$indent  throwValidationError($pointerExpression, \'anyOf\', ${_stringLiteral('Expected at least one subschema in ${constraint.schemaPointer} to validate.')});',
           );
           buffer.writeln('$indent }');
-          for (var branchIndex = 0;
-              branchIndex < matchVars.length;
-              branchIndex++) {
+          for (
+            var branchIndex = 0;
+            branchIndex < matchVars.length;
+            branchIndex++
+          ) {
             buffer.writeln(
               '$indent if (context != null && ${matchVars[branchIndex]} && ${contextVars[branchIndex]} != null) {',
             );
@@ -2259,9 +2327,11 @@ class _SchemaEmitter {
             '$indent  throwValidationError($pointerExpression, \'oneOf\', ${_stringLiteral('Expected exactly one subschema in ${constraint.schemaPointer} to validate.')});',
           );
           buffer.writeln('$indent }');
-          for (var branchIndex = 0;
-              branchIndex < matchVars.length;
-              branchIndex++) {
+          for (
+            var branchIndex = 0;
+            branchIndex < matchVars.length;
+            branchIndex++
+          ) {
             buffer.writeln(
               '$indent if (context != null && ${matchVars[branchIndex]} && ${contextVars[branchIndex]} != null) {',
             );
@@ -2514,7 +2584,7 @@ Uint8List _base32Decode(String input) {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   final normalized = input.toUpperCase().replaceAll(RegExp(r'[=\\s]'), '');
   final bits = <int>[];
-  
+
   for (final char in normalized.split('')) {
     final value = alphabet.indexOf(char);
     if (value == -1) {
@@ -2524,7 +2594,7 @@ Uint8List _base32Decode(String input) {
       bits.add((value >> i) & 1);
     }
   }
-  
+
   final bytes = <int>[];
   for (var i = 0; i < bits.length - (bits.length % 8); i += 8) {
     var byte = 0;
@@ -2533,20 +2603,20 @@ Uint8List _base32Decode(String input) {
     }
     bytes.add(byte);
   }
-  
+
   return Uint8List.fromList(bytes);
 }
 
 String _base32Encode(Uint8List bytes) {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   final bits = <int>[];
-  
+
   for (final byte in bytes) {
     for (var i = 7; i >= 0; i--) {
       bits.add((byte >> i) & 1);
     }
   }
-  
+
   final buffer = StringBuffer();
   for (var i = 0; i < bits.length; i += 5) {
     var value = 0;
@@ -2558,11 +2628,11 @@ String _base32Encode(Uint8List bytes) {
     }
     buffer.write(alphabet[value]);
   }
-  
+
   while (buffer.length % 8 != 0) {
     buffer.write('=');
   }
-  
+
   return buffer.toString();
 }''';
 
@@ -2571,7 +2641,7 @@ String _base32Encode(Uint8List bytes) {
 Uint8List _quotedPrintableDecode(String input) {
   final bytes = <int>[];
   var i = 0;
-  
+
   while (i < input.length) {
     if (input[i] == '=') {
       if (i + 2 < input.length) {
@@ -2597,20 +2667,20 @@ Uint8List _quotedPrintableDecode(String input) {
       i++;
     }
   }
-  
+
   return Uint8List.fromList(bytes);
 }
 
 String _quotedPrintableEncode(Uint8List bytes) {
   final buffer = StringBuffer();
   var lineLength = 0;
-  
+
   for (final byte in bytes) {
     if (lineLength >= 75) {
       buffer.write('=\\n');
       lineLength = 0;
     }
-    
+
     if ((byte >= 33 && byte <= 60) || (byte >= 62 && byte <= 126)) {
       buffer.writeCharCode(byte);
       lineLength++;
@@ -2620,7 +2690,7 @@ String _quotedPrintableEncode(Uint8List bytes) {
       lineLength += 3;
     }
   }
-  
+
   return buffer.toString();
 }''';
 }

@@ -14,7 +14,9 @@ sealed class RunsCompositeStepEnv {
   factory RunsCompositeStepEnv.fromJson(dynamic json) {
     if (json is String) return RunsCompositeStepEnvString(json);
     if (json is! Map<String, dynamic>) {
-      throw ArgumentError('Invalid RunsCompositeStepEnv value: ${json.runtimeType}');
+      throw ArgumentError(
+        'Invalid RunsCompositeStepEnv value: ${json.runtimeType}',
+      );
     }
     final keys = json.keys.toSet();
     final sortedKeys = keys.toList()..sort();
@@ -23,24 +25,31 @@ sealed class RunsCompositeStepEnv {
 
   dynamic toJson();
 }
-class RunsCompositeStepEnvObject extends RunsCompositeStepEnv {
-  final Map<String, RunsCompositeStepEnvObjectAdditionalProperty>? additionalProperties;
 
-  const RunsCompositeStepEnvObject({
-    this.additionalProperties,
-  }) : super();
+class RunsCompositeStepEnvObject extends RunsCompositeStepEnv {
+  final Map<String, RunsCompositeStepEnvObjectAdditionalProperty>?
+  additionalProperties;
+
+  const RunsCompositeStepEnvObject({this.additionalProperties}) : super();
 
   factory RunsCompositeStepEnvObject.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
     var unmatched = Map<String, dynamic>.from(remaining);
-    Map<String, RunsCompositeStepEnvObjectAdditionalProperty>? additionalPropertiesValue;
+    Map<String, RunsCompositeStepEnvObjectAdditionalProperty>?
+    additionalPropertiesValue;
     if (unmatched.isNotEmpty) {
-      final additionalPropertiesMap = <String, RunsCompositeStepEnvObjectAdditionalProperty>{};
+      final additionalPropertiesMap =
+          <String, RunsCompositeStepEnvObjectAdditionalProperty>{};
       for (final entry in unmatched.entries) {
         final value = entry.value;
-        additionalPropertiesMap[entry.key] = RunsCompositeStepEnvObjectAdditionalProperty.fromJson((value as Map).cast<String, dynamic>());
+        additionalPropertiesMap[entry.key] =
+            RunsCompositeStepEnvObjectAdditionalProperty.fromJson(
+              (value as Map).cast<String, dynamic>(),
+            );
       }
-      additionalPropertiesValue = additionalPropertiesMap.isEmpty ? null : additionalPropertiesMap;
+      additionalPropertiesValue = additionalPropertiesMap.isEmpty
+          ? null
+          : additionalPropertiesMap;
       unmatched = <String, dynamic>{};
     } else {
       additionalPropertiesValue = null;
@@ -62,8 +71,82 @@ class RunsCompositeStepEnvObject extends RunsCompositeStepEnv {
   }
 
   @override
-  void validate({String pointer = '', ValidationContext? context}) {}
+  void validate({String pointer = '', ValidationContext? context}) {
+    final _additionalPropertiesMap = additionalProperties;
+    if (_additionalPropertiesMap != null) {
+      _additionalPropertiesMap.forEach((key, value) {
+        final itemPointer = appendJsonPointer(pointer, key);
+        context?.markProperty(pointer, key);
+        final _jsonadditionalProperties = value.toJson();
+        final _constraintadditionalPropertiesc0_0 = context == null
+            ? null
+            : ValidationContext();
+        var _constraintadditionalPropertiesm0_0 = false;
+        try {
+          final context = _constraintadditionalPropertiesc0_0;
+          final _constraintadditionalPropertiesv0_0 =
+              _jsonadditionalProperties as String;
+          _constraintadditionalPropertiesm0_0 = true;
+        } on ValidationError {
+        } catch (_) {}
+        final _constraintadditionalPropertiesc0_1 = context == null
+            ? null
+            : ValidationContext();
+        var _constraintadditionalPropertiesm0_1 = false;
+        try {
+          final context = _constraintadditionalPropertiesc0_1;
+          final _constraintadditionalPropertiesv0_1 =
+              _jsonadditionalProperties as double;
+          _constraintadditionalPropertiesm0_1 = true;
+        } on ValidationError {
+        } catch (_) {}
+        final _constraintadditionalPropertiesc0_2 = context == null
+            ? null
+            : ValidationContext();
+        var _constraintadditionalPropertiesm0_2 = false;
+        try {
+          final context = _constraintadditionalPropertiesc0_2;
+          final _constraintadditionalPropertiesv0_2 =
+              _jsonadditionalProperties as bool;
+          _constraintadditionalPropertiesm0_2 = true;
+        } on ValidationError {
+        } catch (_) {}
+        final _constraintadditionalPropertiesmatches0 = <bool>[
+          _constraintadditionalPropertiesm0_0,
+          _constraintadditionalPropertiesm0_1,
+          _constraintadditionalPropertiesm0_2,
+        ];
+        final _constraintadditionalPropertiescount0 =
+            _constraintadditionalPropertiesmatches0
+                .where((value) => value)
+                .length;
+        if (_constraintadditionalPropertiescount0 != 1) {
+          throwValidationError(
+            itemPointer,
+            'oneOf',
+            'Expected exactly one subschema in #/definitions/runs-composite/properties/steps/items/properties/env/oneOf/0/additionalProperties/oneOf to validate.',
+          );
+        }
+        if (context != null &&
+            _constraintadditionalPropertiesm0_0 &&
+            _constraintadditionalPropertiesc0_0 != null) {
+          context.mergeFrom(_constraintadditionalPropertiesc0_0!);
+        }
+        if (context != null &&
+            _constraintadditionalPropertiesm0_1 &&
+            _constraintadditionalPropertiesc0_1 != null) {
+          context.mergeFrom(_constraintadditionalPropertiesc0_1!);
+        }
+        if (context != null &&
+            _constraintadditionalPropertiesm0_2 &&
+            _constraintadditionalPropertiesc0_2 != null) {
+          context.mergeFrom(_constraintadditionalPropertiesc0_2!);
+        }
+      });
+    }
+  }
 }
+
 class RunsCompositeStepEnvString extends RunsCompositeStepEnv {
   final String value;
 
@@ -71,4 +154,7 @@ class RunsCompositeStepEnvString extends RunsCompositeStepEnv {
 
   @override
   dynamic toJson() => value;
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }

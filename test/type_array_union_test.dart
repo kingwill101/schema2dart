@@ -1,4 +1,4 @@
-import 'package:schema2model/schema2model.dart';
+import 'package:schema2dart/schema2dart.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -14,7 +14,9 @@ void main() {
         },
       };
 
-      final generator = SchemaGenerator(options: const SchemaGeneratorOptions());
+      final generator = SchemaGenerator(
+        options: const SchemaGeneratorOptions(),
+      );
       final code = generator.generate(schema);
 
       expect(code, contains('sealed class Value'));
@@ -31,7 +33,9 @@ void main() {
         },
       };
 
-      final generator = SchemaGenerator(options: const SchemaGeneratorOptions());
+      final generator = SchemaGenerator(
+        options: const SchemaGeneratorOptions(),
+      );
       final code = generator.generate(schema);
 
       expect(code, contains('final String? value;'));
@@ -56,7 +60,9 @@ void main() {
 
       expect(
         code,
-        contains('Expected value to match one of the allowed types [string, number].'),
+        contains(
+          'Expected value to match one of the allowed types [string, number].',
+        ),
       );
     });
   });

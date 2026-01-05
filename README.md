@@ -1,7 +1,8 @@
-# schema2model
+# schema2dart
 
-[![Pub Version](https://img.shields.io/pub/v/schema2model)](https://pub.dev/packages/schema2model)
-[![License](https://img.shields.io/github/license/kingwill101/schema2model)](LICENSE)
+[![Pub Version](https://img.shields.io/pub/v/schema2dart)](https://pub.dev/packages/schema2dart)
+[![License](https://img.shields.io/github/license/kingwill101/schema2dart)](LICENSE)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/kingwill101)
 
 **Production-ready JSON Schema to Dart code generator with full JSON Schema 2020-12 support.**
 
@@ -28,7 +29,7 @@ Generate strongly-typed, immutable Dart models from JSON schemas with runtime va
 ```yaml
 # pubspec.yaml
 dev_dependencies:
-  schema2model: ^latest_version
+  schema2dart: ^latest_version
   build_runner: ^2.4.0
 ```
 
@@ -39,7 +40,7 @@ dev_dependencies:
 targets:
   $default:
     builders:
-      schema2model|schema_builder:
+      schema2dart|schema_builder:
         options:
           emit_validation_helpers: true
         generate_for:
@@ -82,7 +83,7 @@ void main() {
 ### Using the API
 
 ```dart
-import 'package:schema2model/schema2model.dart';
+import 'package:schema2dart/schema2dart.dart';
 
 void main() {
   final schema = {
@@ -230,7 +231,7 @@ Build runner currently supports a focused set of options:
 | `generate_helpers` | bool | `false` | Emit top-level JSON helper functions |
 | `emit_readme_snippets` | bool | `false` | Emit README snippets in multi-file plans |
 | `allow_network_refs` | bool | `false` | Permit network `$ref` resolution |
-| `network_cache_path` | String | `.dart_tool/schema2model/cache` | Cache directory for fetched refs |
+| `network_cache_path` | String | `.dart_tool/schema2dart/cache` | Cache directory for fetched refs |
 | `default_dialect` | String | `latest` | Dialect URI or `none` to require explicit `$schema` |
 | `include_globs` | String or List<String> | `**/*.schema.json`, `**/*.json` | File globs to include |
 
@@ -240,7 +241,7 @@ Example `build.yaml`:
 targets:
   $default:
     builders:
-      schema2model|schema_builder:
+      schema2dart|schema_builder:
         options:
           emit_validation_helpers: true
           default_dialect: "latest"
@@ -281,7 +282,7 @@ SchemaGeneratorOptions(
   allowedNetworkHosts: ['schemas.company.com'],
   allowedFilePaths: ['/workspace/schemas'],
   maxReferenceDepth: 50,
-  networkCachePath: '.dart_tool/schema2model/cache',
+  networkCachePath: '.dart_tool/schema2dart/cache',
   defaultDialect: SchemaDialect.latest,
   supportedDialects: SchemaDialect.defaultDialectRegistry,
 
@@ -346,20 +347,12 @@ SchemaGeneratorOptions(
 
 See [LIMITATIONS.md](LIMITATIONS.md) for details and workarounds.
 
-## 📚 Documentation
-
-- **[Examples](example/)** - Build runner and standalone API examples
-- **[Reference Governance](REFERENCE_GOVERNANCE.md)** - Security and reference resolution
-- **[Anchor Support](ANCHOR_SUPPORT.md)** - Using `$anchor` and `$dynamicAnchor`
-- **[Limitations](LIMITATIONS.md)** - Unsupported features and workarounds
-- **[Changelog](CHANGELOG.md)** - Recent changes and migration guide
-
 ## 🎯 Examples
 
 Check out the [`example/`](example/) directory for:
 
 - **[build_runner_example](example/build_runner_example/)** - Full build runner setup
-- **[schema2model_example.dart](example/schema2model_example.dart)** - Standalone API example
+- **[schema2dart_example.dart](example/schema2dart_example.dart)** - Standalone API example
 - **[helper_functions_example.dart](example/helper_functions_example.dart)** - Top-level helpers
 - **[sealed_unions_example.dart](example/sealed_unions_example.dart)** - `oneOf`/`anyOf` unions
 - **[format_assertions_example.dart](example/format_assertions_example.dart)** - `format` validation
@@ -369,7 +362,7 @@ Check out the [`example/`](example/) directory for:
 
 ## 🔒 Security
 
-schema2model is **secure by default**:
+schema2dart is **secure by default**:
 
 - ✅ **Offline-by-default** - No network access without explicit opt-in
 - ✅ **Allowlists** - Fine-grained control over hosts and file paths
@@ -381,7 +374,7 @@ See [REFERENCE_GOVERNANCE.md](REFERENCE_GOVERNANCE.md) for full details.
 
 ## 🆚 Comparison
 
-| Feature | schema2model | quicktype | json_serializable |
+| Feature | schema2dart | quicktype | json_serializable |
 |---------|-------------|-----------|-------------------|
 | JSON Schema 2020-12 | ✅ Full | ⚠️ Partial | ❌ No |
 | Build runner | ✅ | ❌ | ✅ |
@@ -397,8 +390,8 @@ See [REFERENCE_GOVERNANCE.md](REFERENCE_GOVERNANCE.md) for full details.
 ### Setup
 
 ```bash
-git clone https://github.com/kingwill101/schema2model.git
-cd schema2model
+git clone https://github.com/kingwill101/schema2dart.git
+cd schema2dart
 dart pub get
 ```
 
@@ -426,32 +419,4 @@ dart run
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes with tests
-4. Run `dart analyze` and `dart test`
-5. Submit a pull request
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
-## 📝 License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
-## 🙏 Acknowledgments
-
-- Benchmarked against [quicktype](https://github.com/quicktype/quicktype)
-- Inspired by the JSON Schema community
-- Built with ❤️ for the Dart ecosystem
-
-## 📞 Support
-
-- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/schema2model/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/schema2model/discussions)
-- 📧 **Email**: support@example.com
-
----
-
-**Made with ❤️ by the schema2model team**
+Contributions are welcome!

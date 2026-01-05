@@ -1,9 +1,16 @@
-name: schema2model
+name: schema2dart
 description: Generate strongly typed Dart models from JSON Schema documents.
 version: 1.0.0
-repository: https://github.com/kingwill101/schema2model
-issue_tracker: https://github.com/kingwill101/schema2model/issues
-
+repository: https://github.com/kingwill101/schema2dart
+issue_tracker: https://github.com/kingwill101/schema2dart/issues
+funding:
+  - https://buymeacoffee.com/kingwill101
+topics:
+  - json-schema
+  - codegen
+  - build-runner
+  - validation
+  - schema
 environment:
   sdk: ">=3.10.4 <4.0.0"
 

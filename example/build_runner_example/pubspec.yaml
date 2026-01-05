@@ -1,4 +1,4 @@
-name: schema2model_sample
+name: schema2dart_sample
 version: 0.1.0
 publish_to: "none"
 
@@ -6,7 +6,7 @@ environment:
   sdk: ^3.9.2
 
 dependencies:
-  schema2model:
+  schema2dart:
     path: ../..
 
 dev_dependencies:

@@ -5,29 +5,39 @@
 import 'env.dart';
 import 'shell.dart';
 import 'step_continue_on_error.dart';
+import 'step_if.dart';
 import 'step_timeout_minutes.dart';
+import 'validation_error.dart';
 
 class Step {
   /// Prevents a job from failing when a step fails. Set to true to allow a job to pass when this step fails.
-  /// 
+  ///
   /// Default: false.
   final StepContinueOnError? continueOnError;
+
   /// Sets environment variables for steps to use in the virtual environment. You can also set environment variables for the entire workflow or a job.
   final Env? env;
+
   /// A unique identifier for the step. You can use the id to reference the step in contexts. For more information, see https://help.github.com/en/articles/contexts-and-expression-syntax-for-github-actions.
   final String? id;
+
   /// You can use the if conditional to prevent a step from running unless a condition is met. You can use any supported context and expression to create a conditional.
   /// Expressions in an if conditional do not require the ${{ }} syntax. For more information, see https://help.github.com/en/articles/contexts-and-expression-syntax-for-github-actions.
-  final bool? if_;
+  /// Constraints: types: [boolean, number, string]
+  final StepIf? if_;
+
   /// A name for your step to display on GitHub.
   final String? name;
+
   /// Runs command-line programs using the operating system's shell. If you do not provide a name, the step name will default to the text specified in the run command.
   /// Commands run using non-login shells by default. You can choose a different shell and customize the shell used to run commands. For more information, see https://help.github.com/en/actions/automating-your-workflow-with-github-actions/workflow-syntax-for-github-actions#using-a-specific-shell.
   /// Each run keyword represents a new process and shell in the virtual environment. When you provide multi-line commands, each line runs in the same shell.
   final String? run;
   final Shell? shell;
+
   /// The maximum number of minutes to run the step before killing the process.
   final StepTimeoutMinutes? timeoutMinutes;
+
   /// Selects an action to run as part of a step in your job. An action is a reusable unit of code. You can use an action defined in the same repository as the workflow, a public repository, or in a published Docker container image (https://hub.docker.com/).
   /// We strongly recommend that you include the version of the action you are using by specifying a Git ref, SHA, or Docker tag number. If you don't specify a version, it could break your workflows or cause unexpected behavior when the action owner publishes an update.
   /// - Using the commit SHA of a released action version is the safest for stability and security.
@@ -36,6 +46,7 @@ class Step {
   /// Some actions require inputs that you must set using the with keyword. Review the action's README file to determine the inputs required.
   /// Actions are either JavaScript files or Docker containers. If the action you're using is a Docker container you must run the job in a Linux virtual environment. For more details, see https://help.github.com/en/articles/virtual-environments-for-github-actions.
   final String? uses;
+
   /// A map of the input parameters defined by the action. Each input parameter is a key/value pair. Input parameters are set as environment variables. The variable is prefixed with INPUT_ and converted to upper case.
   final Env? with_;
   final String? workingDirectory;
@@ -56,25 +67,43 @@ class Step {
 
   factory Step.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
-    final continueOnError = (json['continue-on-error'] == null ? null : StepContinueOnError.fromJson((json['continue-on-error'] as Map).cast<String, dynamic>())) ?? const StepContinueOnErrorBool(false);
+    final continueOnError =
+        (json['continue-on-error'] == null
+            ? null
+            : StepContinueOnError.fromJson(
+                (json['continue-on-error'] as Map).cast<String, dynamic>(),
+              )) ??
+        const StepContinueOnErrorBool(false);
     remaining.remove('continue-on-error');
-    final env = json['env'] == null ? null : Env.fromJson((json['env'] as Map).cast<String, dynamic>());
+    final env = json['env'] == null
+        ? null
+        : Env.fromJson((json['env'] as Map).cast<String, dynamic>());
     remaining.remove('env');
     final id = json['id'] as String?;
     remaining.remove('id');
-    final if_ = json['if'] as bool?;
+    final if_ = json['if'] == null
+        ? null
+        : StepIf.fromJson((json['if'] as Map).cast<String, dynamic>());
     remaining.remove('if');
     final name = json['name'] as String?;
     remaining.remove('name');
     final run = json['run'] as String?;
     remaining.remove('run');
-    final shell = json['shell'] == null ? null : Shell.fromJson((json['shell'] as Map).cast<String, dynamic>());
+    final shell = json['shell'] == null
+        ? null
+        : Shell.fromJson((json['shell'] as Map).cast<String, dynamic>());
     remaining.remove('shell');
-    final timeoutMinutes = json['timeout-minutes'] == null ? null : StepTimeoutMinutes.fromJson((json['timeout-minutes'] as Map).cast<String, dynamic>());
+    final timeoutMinutes = json['timeout-minutes'] == null
+        ? null
+        : StepTimeoutMinutes.fromJson(
+            (json['timeout-minutes'] as Map).cast<String, dynamic>(),
+          );
     remaining.remove('timeout-minutes');
     final uses = json['uses'] as String?;
     remaining.remove('uses');
-    final with_ = json['with'] == null ? null : Env.fromJson((json['with'] as Map).cast<String, dynamic>());
+    final with_ = json['with'] == null
+        ? null
+        : Env.fromJson((json['with'] as Map).cast<String, dynamic>());
     remaining.remove('with');
     final workingDirectory = json['working-directory'] as String?;
     remaining.remove('working-directory');
@@ -100,17 +129,177 @@ class Step {
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
-    if (continueOnError != null) map['continue-on-error'] = continueOnError!.toJson();
+    if (continueOnError != null)
+      map['continue-on-error'] = continueOnError!.toJson();
     if (env != null) map['env'] = env!.toJson();
     if (id != null) map['id'] = id;
-    if (if_ != null) map['if'] = if_;
+    if (if_ != null) map['if'] = if_!.toJson();
     if (name != null) map['name'] = name;
     if (run != null) map['run'] = run;
     if (shell != null) map['shell'] = shell!.toJson();
-    if (timeoutMinutes != null) map['timeout-minutes'] = timeoutMinutes!.toJson();
+    if (timeoutMinutes != null)
+      map['timeout-minutes'] = timeoutMinutes!.toJson();
     if (uses != null) map['uses'] = uses;
     if (with_ != null) map['with'] = with_!.toJson();
     if (workingDirectory != null) map['working-directory'] = workingDirectory;
     return map;
+  }
+
+  void validate({String pointer = '', ValidationContext? context}) {
+    final _ptr0 = appendJsonPointer(pointer, 'continue-on-error');
+    final _value0 = continueOnError;
+    context?.annotate(
+      _ptr0,
+      'default',
+      false,
+      schemaPointer: '#/definitions/step/properties/continue-on-error',
+    );
+    if (_value0 != null) {
+      context?.markProperty(pointer, 'continue-on-error');
+      final _jsonp0 = _value0.toJson();
+      final _constraintp0c0_0 = context == null ? null : ValidationContext();
+      var _constraintp0m0_0 = false;
+      try {
+        final context = _constraintp0c0_0;
+        final _constraintp0v0_0 = _jsonp0 as bool;
+        _constraintp0m0_0 = true;
+      } on ValidationError {
+      } catch (_) {}
+      final _constraintp0c0_1 = context == null ? null : ValidationContext();
+      var _constraintp0m0_1 = false;
+      try {
+        final context = _constraintp0c0_1;
+        final _constraintp0v0_1 = _jsonp0 as String;
+        _constraintp0m0_1 = true;
+      } on ValidationError {
+      } catch (_) {}
+      final _constraintp0matches0 = <bool>[
+        _constraintp0m0_0,
+        _constraintp0m0_1,
+      ];
+      final _constraintp0count0 = _constraintp0matches0
+          .where((value) => value)
+          .length;
+      if (_constraintp0count0 != 1) {
+        throwValidationError(
+          _ptr0,
+          'oneOf',
+          'Expected exactly one subschema in #/definitions/step/properties/continue-on-error/oneOf to validate.',
+        );
+      }
+      if (context != null && _constraintp0m0_0 && _constraintp0c0_0 != null) {
+        context.mergeFrom(_constraintp0c0_0!);
+      }
+      if (context != null && _constraintp0m0_1 && _constraintp0c0_1 != null) {
+        context.mergeFrom(_constraintp0c0_1!);
+      }
+    }
+    final _ptr1 = appendJsonPointer(pointer, 'env');
+    final _value1 = env;
+    if (_value1 != null) {
+      context?.markProperty(pointer, 'env');
+    }
+    final _ptr2 = appendJsonPointer(pointer, 'id');
+    final _value2 = id;
+    if (_value2 != null) {
+      context?.markProperty(pointer, 'id');
+    }
+    final _ptr3 = appendJsonPointer(pointer, 'if');
+    final _value3 = if_;
+    if (_value3 != null) {
+      context?.markProperty(pointer, 'if');
+      if (!(_value3 is bool || _value3 is num || _value3 is String)) {
+        throwValidationError(
+          _ptr3,
+          'type',
+          'Expected value to match one of the allowed types [boolean, number, string].',
+        );
+      }
+    }
+    final _ptr4 = appendJsonPointer(pointer, 'name');
+    final _value4 = name;
+    if (_value4 != null) {
+      context?.markProperty(pointer, 'name');
+    }
+    final _ptr5 = appendJsonPointer(pointer, 'run');
+    final _value5 = run;
+    if (_value5 != null) {
+      context?.markProperty(pointer, 'run');
+    }
+    final _ptr6 = appendJsonPointer(pointer, 'shell');
+    final _value6 = shell;
+    if (_value6 != null) {
+      context?.markProperty(pointer, 'shell');
+    }
+    final _ptr7 = appendJsonPointer(pointer, 'timeout-minutes');
+    final _value7 = timeoutMinutes;
+    if (_value7 != null) {
+      context?.markProperty(pointer, 'timeout-minutes');
+      final _jsonp7 = _value7.toJson();
+      final _constraintp7c0_0 = context == null ? null : ValidationContext();
+      var _constraintp7m0_0 = false;
+      try {
+        final context = _constraintp7c0_0;
+        final _constraintp7v0_0 = _jsonp7 as double;
+        _constraintp7m0_0 = true;
+      } on ValidationError {
+      } catch (_) {}
+      final _constraintp7c0_1 = context == null ? null : ValidationContext();
+      var _constraintp7m0_1 = false;
+      try {
+        final context = _constraintp7c0_1;
+        final _constraintp7v0_1 = _jsonp7 as String;
+        _constraintp7m0_1 = true;
+      } on ValidationError {
+      } catch (_) {}
+      final _constraintp7matches0 = <bool>[
+        _constraintp7m0_0,
+        _constraintp7m0_1,
+      ];
+      final _constraintp7count0 = _constraintp7matches0
+          .where((value) => value)
+          .length;
+      if (_constraintp7count0 != 1) {
+        throwValidationError(
+          _ptr7,
+          'oneOf',
+          'Expected exactly one subschema in #/definitions/step/properties/timeout-minutes/oneOf to validate.',
+        );
+      }
+      if (context != null && _constraintp7m0_0 && _constraintp7c0_0 != null) {
+        context.mergeFrom(_constraintp7c0_0!);
+      }
+      if (context != null && _constraintp7m0_1 && _constraintp7c0_1 != null) {
+        context.mergeFrom(_constraintp7c0_1!);
+      }
+    }
+    final _ptr8 = appendJsonPointer(pointer, 'uses');
+    final _value8 = uses;
+    if (_value8 != null) {
+      context?.markProperty(pointer, 'uses');
+    }
+    final _ptr9 = appendJsonPointer(pointer, 'with');
+    final _value9 = with_;
+    if (_value9 != null) {
+      context?.markProperty(pointer, 'with');
+    }
+    final _ptr10 = appendJsonPointer(pointer, 'working-directory');
+    final _value10 = workingDirectory;
+    if (_value10 != null) {
+      context?.markProperty(pointer, 'working-directory');
+    }
+    final _constraint0Match0 = uses != null;
+    final _constraint0Match1 = run != null;
+    final _constraint0Matches = <bool>[_constraint0Match0, _constraint0Match1];
+    final _constraint0MatchCount = _constraint0Matches
+        .where((value) => value)
+        .length;
+    if (_constraint0MatchCount != 1) {
+      throwValidationError(
+        pointer,
+        'oneOf',
+        'Expected exactly one of the combinations defined at #/definitions/step/oneOf to be satisfied (["uses"], ["run"]).',
+      );
+    }
   }
 }

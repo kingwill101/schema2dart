@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 
 void main() {
   group('Contextual Naming', () {
@@ -14,11 +14,11 @@ void main() {
               'type': 'object',
               'properties': {
                 'name': {'type': 'string'},
-                'age': {'type': 'integer'}
-              }
-            }
-          }
-        }
+                'age': {'type': 'integer'},
+              },
+            },
+          },
+        },
       };
 
       final generator = SchemaGenerator(
@@ -43,12 +43,12 @@ void main() {
               {
                 'type': 'object',
                 'properties': {
-                  'code': {'type': 'integer'}
-                }
-              }
-            ]
-          }
-        }
+                  'code': {'type': 'integer'},
+                },
+              },
+            ],
+          },
+        },
       };
 
       final generator = SchemaGenerator(
@@ -72,18 +72,18 @@ void main() {
             'type': 'object',
             'properties': {
               'type': {'const': 'circle'},
-              'radius': {'type': 'number'}
-            }
+              'radius': {'type': 'number'},
+            },
           },
           {
             'type': 'object',
             'properties': {
               'type': {'const': 'square'},
-              'side': {'type': 'number'}
-            }
-          }
+              'side': {'type': 'number'},
+            },
+          },
         ],
-        'discriminator': {'propertyName': 'type'}
+        'discriminator': {'propertyName': 'type'},
       };
 
       final generator = SchemaGenerator(
@@ -107,10 +107,10 @@ void main() {
             'type': 'object',
             'properties': {
               'timeout': {'type': 'integer'},
-              'retries': {'type': 'integer'}
-            }
-          }
-        }
+              'retries': {'type': 'integer'},
+            },
+          },
+        },
       };
 
       final generator = SchemaGenerator(
@@ -134,20 +134,20 @@ void main() {
             'items': {
               'type': 'object',
               'properties': {
-                'name': {'type': 'string'}
-              }
-            }
+                'name': {'type': 'string'},
+              },
+            },
           },
           'entries': {
             'type': 'array',
             'items': {
               'type': 'object',
               'properties': {
-                'key': {'type': 'string'}
-              }
-            }
-          }
-        }
+                'key': {'type': 'string'},
+              },
+            },
+          },
+        },
       };
 
       final generator = SchemaGenerator(
@@ -173,12 +173,12 @@ void main() {
               {
                 'type': 'object',
                 'properties': {
-                  'uses': {'type': 'string'}
-                }
-              }
-            ]
-          }
-        }
+                  'uses': {'type': 'string'},
+                },
+              },
+            ],
+          },
+        },
       };
 
       final generator = SchemaGenerator(

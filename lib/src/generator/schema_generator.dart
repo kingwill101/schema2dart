@@ -1,4 +1,4 @@
-part of 'package:schema2model/src/generator.dart';
+part of 'package:schema2dart/src/generator.dart';
 
 /// Entrypoint that turns a JSON schema map into Dart source code.
 class SchemaGenerator {
@@ -143,7 +143,7 @@ class SchemaGenerator {
           final variant = variantClasses[i];
           final variantSpec = union.variants[i];
           final variantName = variant.name;
-          
+
           // Collect dependencies from ALL variants regardless of type
           final variantDeps = _dependenciesForClass(
             variant,
@@ -151,7 +151,7 @@ class SchemaGenerator {
             unionVariants: unionVariantLookup,
           ).where((type) => type != klass.name && !variantNames.contains(type));
           dependencies.addAll(variantDeps);
-          
+
           // Also collect from primitive type if this is a primitive wrapper
           if (variantSpec.primitiveType != null) {
             final primDeps = <String>{};
@@ -161,14 +161,18 @@ class SchemaGenerator {
               owner: klass.name,
               unionVariants: unionVariantLookup,
             );
-            dependencies.addAll(primDeps.where((type) => !variantNames.contains(type)));
+            dependencies.addAll(
+              primDeps.where((type) => !variantNames.contains(type)),
+            );
           }
-          
+
           // If variant is an enum, import it
           if (allEnumNames.contains(variantName)) {
             enumVariantNames.add(variantName);
-            dependencies.add(variantName); // Add enum as dependency to be imported
-          } 
+            dependencies.add(
+              variantName,
+            ); // Add enum as dependency to be imported
+          }
           // If variant is itself a sealed base class from another union, import it
           else if (unionByBase.containsKey(variantName)) {
             dependencies.add(variantName); // Import the sealed base class
@@ -280,7 +284,7 @@ class SchemaGenerator {
     if (header.isNotEmpty) {
       buffer.writeln('// $header');
     }
-    
+
     // Add usage documentation if enabled
     if (options.emitUsageDocs) {
       buffer.writeln('//');
@@ -288,7 +292,9 @@ class SchemaGenerator {
       buffer.writeln('//');
       buffer.writeln("//     import 'dart:convert';");
       buffer.writeln('//');
-      buffer.writeln('//     final obj = ClassName.fromJson(jsonDecode(jsonString));');
+      buffer.writeln(
+        '//     final obj = ClassName.fromJson(jsonDecode(jsonString));',
+      );
       buffer.writeln('//     final jsonString = jsonEncode(obj.toJson());');
       if (options.generateHelpers) {
         buffer.writeln('//');
@@ -298,7 +304,7 @@ class SchemaGenerator {
         buffer.writeln('//     final jsonString = classNameToJson(obj);');
       }
     }
-    
+
     buffer.writeln();
     return buffer.toString();
   }
@@ -366,13 +372,13 @@ class SchemaGenerator {
       final ref = constraint.typeRef;
       if (ref != null) {
         _collectTypeDependencies(
-        ref,
-        collected,
-        owner: klass.name,
-        unionVariants: unionVariants,
-        unionBaseNames: unionBaseNames,
-      );
-    }
+          ref,
+          collected,
+          owner: klass.name,
+          unionVariants: unionVariants,
+          unionBaseNames: unionBaseNames,
+        );
+      }
     }
 
     final baseUnion = unionByBase[klass.name];
@@ -402,6 +408,16 @@ class SchemaGenerator {
     Set<String>? unionBaseNames,
   }) {
     if (ref is ValidatedTypeRef) {
+      _collectTypeDependencies(
+        ref.inner,
+        out,
+        owner: owner,
+        unionVariants: unionVariants,
+        unionBaseNames: unionBaseNames,
+      );
+      return;
+    }
+    if (ref is ApplicatorTypeRef) {
       _collectTypeDependencies(
         ref.inner,
         out,

@@ -12,8 +12,8 @@ tests=(
   "nested_objects"
   "array_of_objects"
   "union_types"
-  "anyOf_objects"
-  "allOf_composition"
+  "any_of_objects"
+  "all_of_composition"
   "additional_properties"
   "definitions_refs"
 )

@@ -8,10 +8,7 @@ class Settings {
   final String? known;
   final Map<String, String>? unevaluatedProperties;
 
-  const Settings({
-    this.known,
-    this.unevaluatedProperties,
-  });
+  const Settings({this.known, this.unevaluatedProperties});
 
   factory Settings.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
@@ -25,7 +22,9 @@ class Settings {
         final value = entry.value;
         unevaluatedPropertiesMap[entry.key] = value as String;
       }
-      unevaluatedPropertiesValue = unevaluatedPropertiesMap.isEmpty ? null : unevaluatedPropertiesMap;
+      unevaluatedPropertiesValue = unevaluatedPropertiesMap.isEmpty
+          ? null
+          : unevaluatedPropertiesMap;
       unmatched = <String, dynamic>{};
     } else {
       unevaluatedPropertiesValue = null;

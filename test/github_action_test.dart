@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -49,9 +49,7 @@ void main() {
       expect(classNames, isNot(contains('RunsComposite2')));
       expect(classNames, isNot(contains('RunsDocker2')));
 
-      final union = ir.unions.singleWhere(
-        (union) => union.name == 'Runs',
-      );
+      final union = ir.unions.singleWhere((union) => union.name == 'Runs');
       expect(
         union.variants.map((variant) => variant.classSpec.name).toList(),
         unorderedEquals(<String>[
@@ -117,10 +115,7 @@ void main() {
         expect(plan.files.containsKey('runs_docker.dart'), isFalse);
 
         final barrel = plan.barrel;
-        expect(
-          barrel,
-          contains("export '${plan.partsDirectory}/runs.dart';"),
-        );
+        expect(barrel, contains("export '${plan.partsDirectory}/runs.dart';"));
         expect(barrel, isNot(contains("runs_javascript.dart")));
       },
     );

@@ -13,24 +13,36 @@ sealed class RunsCompositeStepContinueOnError {
   factory RunsCompositeStepContinueOnError.fromJson(dynamic json) {
     if (json is bool) return RunsCompositeStepContinueOnErrorBool(json);
     if (json is String) return RunsCompositeStepContinueOnErrorString(json);
-    throw ArgumentError('Invalid RunsCompositeStepContinueOnError value type: ${json.runtimeType}');
+    throw ArgumentError(
+      'Invalid RunsCompositeStepContinueOnError value type: ${json.runtimeType}',
+    );
   }
 
   dynamic toJson();
 }
-class RunsCompositeStepContinueOnErrorBool extends RunsCompositeStepContinueOnError {
+
+class RunsCompositeStepContinueOnErrorBool
+    extends RunsCompositeStepContinueOnError {
   final bool value;
 
   const RunsCompositeStepContinueOnErrorBool(this.value) : super();
 
   @override
   dynamic toJson() => value;
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }
-class RunsCompositeStepContinueOnErrorString extends RunsCompositeStepContinueOnError {
+
+class RunsCompositeStepContinueOnErrorString
+    extends RunsCompositeStepContinueOnError {
   final String value;
 
   const RunsCompositeStepContinueOnErrorString(this.value) : super();
 
   @override
   dynamic toJson() => value;
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }

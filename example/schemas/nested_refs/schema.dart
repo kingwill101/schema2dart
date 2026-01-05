@@ -5,5 +5,6 @@
 export 'schema_generated/nested_references_example.dart';
 export 'schema_generated/address.dart';
 export 'schema_generated/person.dart';
-export 'schema_generated/nested_references_example_manager.dart';
+export 'schema_generated/manager.dart';
+export 'schema_generated/root_schema_manager.dart';
 export 'schema_generated/validation_error.dart';

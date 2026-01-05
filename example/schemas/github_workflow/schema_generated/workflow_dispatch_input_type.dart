@@ -7,18 +7,18 @@ enum WorkflowDispatchInputType { string, choice, boolean, number, environment }
 
 extension WorkflowDispatchInputTypeJson on WorkflowDispatchInputType {
   String toJson() => const {
-        WorkflowDispatchInputType.string: 'string',
-        WorkflowDispatchInputType.choice: 'choice',
-        WorkflowDispatchInputType.boolean: 'boolean',
-        WorkflowDispatchInputType.number: 'number',
-        WorkflowDispatchInputType.environment: 'environment',
-      }[this]!;
+    WorkflowDispatchInputType.string: 'string',
+    WorkflowDispatchInputType.choice: 'choice',
+    WorkflowDispatchInputType.boolean: 'boolean',
+    WorkflowDispatchInputType.number: 'number',
+    WorkflowDispatchInputType.environment: 'environment',
+  }[this]!;
 
   static WorkflowDispatchInputType fromJson(String value) => const {
-        'string': WorkflowDispatchInputType.string,
-        'choice': WorkflowDispatchInputType.choice,
-        'boolean': WorkflowDispatchInputType.boolean,
-        'number': WorkflowDispatchInputType.number,
-        'environment': WorkflowDispatchInputType.environment,
-      }[value]!;
+    'string': WorkflowDispatchInputType.string,
+    'choice': WorkflowDispatchInputType.choice,
+    'boolean': WorkflowDispatchInputType.boolean,
+    'number': WorkflowDispatchInputType.number,
+    'environment': WorkflowDispatchInputType.environment,
+  }[value]!;
 }

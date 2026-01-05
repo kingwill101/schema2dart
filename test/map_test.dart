@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -50,9 +50,7 @@ void main() {
 
       expect(
         generated,
-        contains(
-          "final unexpected = unmatched.keys.join(', ');",
-        ),
+        contains("final unexpected = unmatched.keys.join(', ');"),
       );
       expect(
         generated,

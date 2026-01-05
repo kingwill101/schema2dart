@@ -1,4 +1,4 @@
-import 'package:schema2model/schema2model.dart';
+import 'package:schema2dart/schema2dart.dart';
 
 void main() {
   const schema = <String, dynamic>{

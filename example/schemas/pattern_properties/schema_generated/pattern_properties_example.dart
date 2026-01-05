@@ -9,10 +9,7 @@ class PatternPropertiesExample {
   final String? name;
   final Map<String, dynamic>? patternProperties;
 
-  const PatternPropertiesExample({
-    this.name,
-    this.patternProperties,
-  });
+  const PatternPropertiesExample({this.name, this.patternProperties});
 
   factory PatternPropertiesExample.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
@@ -39,7 +36,9 @@ class PatternPropertiesExample {
           unmatchedAfterPattern[key] = value;
         }
       }
-      patternPropertiesValue = patternPropertiesMap.isEmpty ? null : patternPropertiesMap;
+      patternPropertiesValue = patternPropertiesMap.isEmpty
+          ? null
+          : patternPropertiesMap;
       unmatched = unmatchedAfterPattern;
     }
     if (unmatched.isNotEmpty) {

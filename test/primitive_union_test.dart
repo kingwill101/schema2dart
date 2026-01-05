@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:schema2model/schema2model.dart';
+import 'package:schema2dart/schema2dart.dart';
 
 void main() {
   group('Primitive Union Types', () {
@@ -19,10 +19,13 @@ void main() {
 
       final generator = SchemaGenerator(options: SchemaGeneratorOptions());
       final code = generator.generate(schema);
-      
+
       // Should generate sealed class, not dynamic
       expect(code, contains('sealed class'));
-      expect(code, contains('sealed class Value')); // Updated: uses contextual name
+      expect(
+        code,
+        contains('sealed class Value'),
+      ); // Updated: uses contextual name
       expect(code, isNot(contains('final dynamic value')));
     });
 
@@ -43,8 +46,11 @@ void main() {
 
       final generator = SchemaGenerator(options: SchemaGeneratorOptions());
       final code = generator.generate(schema);
-      
-      expect(code, contains('sealed class Value')); // Updated: uses contextual name
+
+      expect(
+        code,
+        contains('sealed class Value'),
+      ); // Updated: uses contextual name
       expect(code, contains('String'));
       expect(code, contains('num'));
       expect(code, contains('bool'));
@@ -66,7 +72,7 @@ void main() {
 
       final generator = SchemaGenerator(options: SchemaGeneratorOptions());
       final code = generator.generate(schema);
-      
+
       // Should return nullable String? instead of sealed class for string | null
       expect(code, contains('final String? value'));
     });
@@ -92,8 +98,11 @@ void main() {
 
       final generator = SchemaGenerator(options: SchemaGeneratorOptions());
       final code = generator.generate(schema);
-      
-      expect(code, contains('sealed class Value')); // Updated: uses contextual name
+
+      expect(
+        code,
+        contains('sealed class Value'),
+      ); // Updated: uses contextual name
       expect(code, contains('String'));
       expect(code, contains('class'));
     });
@@ -115,12 +124,12 @@ void main() {
 
       final generator = SchemaGenerator(options: SchemaGeneratorOptions());
       final code = generator.generate(schema);
-      
+
       // Should have fromJson that checks types
       expect(code, contains('fromJson'));
       expect(code, anyOf(contains('is String'), contains('String')));
       expect(code, anyOf(contains('is num'), contains('num')));
-      
+
       // Should have toJson
       expect(code, contains('toJson'));
     });
@@ -141,9 +150,12 @@ void main() {
 
       final generator = SchemaGenerator(options: SchemaGeneratorOptions());
       final code = generator.generate(schema);
-      
+
       expect(code, contains('sealed class'));
-      expect(code, contains('Value')); // Updated: uses contextual name from pointer
+      expect(
+        code,
+        contains('Value'),
+      ); // Updated: uses contextual name from pointer
     });
 
     test('handles array of primitive unions', () {
@@ -165,9 +177,12 @@ void main() {
 
       final generator = SchemaGenerator(options: SchemaGeneratorOptions());
       final code = generator.generate(schema);
-      
+
       expect(code, contains('List<'));
-      expect(code, contains('Value')); // Updated: uses contextual name from pointer
+      expect(
+        code,
+        contains('Value'),
+      ); // Updated: uses contextual name from pointer
     });
   });
 }

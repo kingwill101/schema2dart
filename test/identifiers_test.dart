@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 SchemaGenerator _createGenerator({
@@ -25,19 +25,19 @@ void main() {
         r'$id': 'https://example.com/root',
         'type': 'object',
         'properties': <String, dynamic>{
-          'step': <String, dynamic>{
-            r'$anchor': 'step',
-            'type': 'string',
-          },
+          'step': <String, dynamic>{r'$anchor': 'step', 'type': 'string'},
           'useAnchor': <String, dynamic>{r'$ref': '#step'},
         },
       };
 
       final ir = generator.buildIr(schema);
       final root = ir.rootClass;
-      final step = root.properties.singleWhere((prop) => prop.fieldName == 'step');
-      final useAnchor =
-          root.properties.singleWhere((prop) => prop.fieldName == 'useAnchor');
+      final step = root.properties.singleWhere(
+        (prop) => prop.fieldName == 'step',
+      );
+      final useAnchor = root.properties.singleWhere(
+        (prop) => prop.fieldName == 'useAnchor',
+      );
 
       expect(step.typeRef, isA<PrimitiveTypeRef>());
       expect(useAnchor.typeRef, isA<PrimitiveTypeRef>());
@@ -68,10 +68,12 @@ void main() {
 
       final ir = generator.buildIr(schema);
       final root = ir.rootClass;
-      final child =
-          root.properties.singleWhere((prop) => prop.fieldName == 'child');
-      final useDynamic =
-          root.properties.singleWhere((prop) => prop.fieldName == 'useDynamic');
+      final child = root.properties.singleWhere(
+        (prop) => prop.fieldName == 'child',
+      );
+      final useDynamic = root.properties.singleWhere(
+        (prop) => prop.fieldName == 'useDynamic',
+      );
 
       expect(child.typeRef, isA<ObjectTypeRef>());
       expect(useDynamic.typeRef, isA<ObjectTypeRef>());
@@ -95,18 +97,18 @@ void main() {
               'name': <String, dynamic>{'type': 'string'},
             },
           },
-          'usePointer': <String, dynamic>{
-            r'$ref': '#/properties/refObject',
-          },
+          'usePointer': <String, dynamic>{r'$ref': '#/properties/refObject'},
         },
       };
 
       final ir = generator.buildIr(schema);
       final root = ir.rootClass;
-      final refObject =
-          root.properties.singleWhere((prop) => prop.fieldName == 'refObject');
-      final usePointer =
-          root.properties.singleWhere((prop) => prop.fieldName == 'usePointer');
+      final refObject = root.properties.singleWhere(
+        (prop) => prop.fieldName == 'refObject',
+      );
+      final usePointer = root.properties.singleWhere(
+        (prop) => prop.fieldName == 'usePointer',
+      );
 
       expect(refObject.typeRef, isA<ObjectTypeRef>());
       expect(usePointer.typeRef, isA<ObjectTypeRef>());
@@ -152,8 +154,9 @@ void main() {
 
       final ir = generator.buildIr(documents['https://example.com/root']!);
       final root = ir.rootClass;
-      final external =
-          root.properties.singleWhere((prop) => prop.fieldName == 'external_');
+      final external = root.properties.singleWhere(
+        (prop) => prop.fieldName == 'external_',
+      );
 
       expect(external.typeRef, isA<PrimitiveTypeRef>());
       expect((external.typeRef as PrimitiveTypeRef).typeName, 'String');
@@ -196,8 +199,9 @@ void main() {
 
       final ir = generator.buildIr(documents['https://example.com/root']!);
       final root = ir.rootClass;
-      final useDynamic =
-          root.properties.singleWhere((prop) => prop.fieldName == 'useDynamic');
+      final useDynamic = root.properties.singleWhere(
+        (prop) => prop.fieldName == 'useDynamic',
+      );
 
       expect(useDynamic.typeRef, isA<ObjectTypeRef>());
       final spec = (useDynamic.typeRef as ObjectTypeRef).spec;
@@ -235,10 +239,13 @@ void main() {
         baseUri: Uri.parse('https://example.com/root/root.json'),
       );
 
-      final ir = generator.buildIr(documents['https://example.com/root/root.json']!);
+      final ir = generator.buildIr(
+        documents['https://example.com/root/root.json']!,
+      );
       final root = ir.rootClass;
-      final useChild =
-          root.properties.singleWhere((prop) => prop.fieldName == 'useChild');
+      final useChild = root.properties.singleWhere(
+        (prop) => prop.fieldName == 'useChild',
+      );
 
       expect(useChild.typeRef, isA<ObjectTypeRef>());
       final spec = (useChild.typeRef as ObjectTypeRef).spec;
@@ -253,14 +260,8 @@ void main() {
         r'$id': 'https://example.com/root',
         'type': 'object',
         'properties': <String, dynamic>{
-          'first': <String, dynamic>{
-            r'$anchor': 'dup',
-            'type': 'string',
-          },
-          'second': <String, dynamic>{
-            r'$anchor': 'dup',
-            'type': 'string',
-          },
+          'first': <String, dynamic>{r'$anchor': 'dup', 'type': 'string'},
+          'second': <String, dynamic>{r'$anchor': 'dup', 'type': 'string'},
         },
       };
 
@@ -284,10 +285,7 @@ void main() {
         r'$id': 'https://example.com/root',
         'type': 'object',
         'properties': <String, dynamic>{
-          'bad': <String, dynamic>{
-            r'$anchor': '',
-            'type': 'string',
-          },
+          'bad': <String, dynamic>{r'$anchor': '', 'type': 'string'},
         },
       };
 
@@ -311,14 +309,8 @@ void main() {
         r'$id': 'https://example.com/root',
         'type': 'object',
         r'$defs': <String, dynamic>{
-          'first': <String, dynamic>{
-            r'$id': 'shared.json',
-            'type': 'string',
-          },
-          'second': <String, dynamic>{
-            r'$id': 'shared.json',
-            'type': 'string',
-          },
+          'first': <String, dynamic>{r'$id': 'shared.json', 'type': 'string'},
+          'second': <String, dynamic>{r'$id': 'shared.json', 'type': 'string'},
         },
       };
 
@@ -363,10 +355,7 @@ void main() {
         r'$id': 'https://example.com/root',
         'type': 'object',
         'properties': <String, dynamic>{
-          'bad': <String, dynamic>{
-            r'$dynamicAnchor': '',
-            'type': 'object',
-          },
+          'bad': <String, dynamic>{r'$dynamicAnchor': '', 'type': 'object'},
         },
       };
 

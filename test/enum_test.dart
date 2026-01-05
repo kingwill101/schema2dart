@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -26,9 +26,7 @@ void main() {
       const schema = <String, dynamic>{
         'type': 'object',
         'properties': {
-          'version': {
-            'const': '1.0.0',
-          },
+          'version': {'const': '1.0.0'},
         },
       };
 

@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -15,9 +15,7 @@ void main() {
     });
 
     test('handles schema with only title', () {
-      const schema = <String, dynamic>{
-        'title': 'EmptyClass',
-      };
+      const schema = <String, dynamic>{'title': 'EmptyClass'};
 
       final generator = SchemaGenerator(
         options: const SchemaGeneratorOptions(),
@@ -80,10 +78,7 @@ void main() {
     test('handles boolean schemas', () {
       const schema = <String, dynamic>{
         'type': 'object',
-        'properties': {
-          'anything': true,
-          'nothing': false,
-        },
+        'properties': {'anything': true, 'nothing': false},
       };
 
       final generator = SchemaGenerator(

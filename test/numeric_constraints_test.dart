@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -7,16 +7,8 @@ void main() {
       const schema = <String, dynamic>{
         'type': 'object',
         'properties': {
-          'age': {
-            'type': 'integer',
-            'minimum': 0,
-            'maximum': 150,
-          },
-          'score': {
-            'type': 'number',
-            'minimum': 0.0,
-            'maximum': 100.0,
-          },
+          'age': {'type': 'integer', 'minimum': 0, 'maximum': 150},
+          'score': {'type': 'number', 'minimum': 0.0, 'maximum': 100.0},
         },
       };
 
@@ -54,10 +46,7 @@ void main() {
       const schema = <String, dynamic>{
         'type': 'object',
         'properties': {
-          'quantity': {
-            'type': 'integer',
-            'multipleOf': 5,
-          },
+          'quantity': {'type': 'integer', 'multipleOf': 5},
         },
       };
 

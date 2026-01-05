@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -23,8 +23,9 @@ void main() {
       );
 
       final ir = generator.buildIr(schema);
-      final avatarProp = ir.rootClass.properties
-          .firstWhere((p) => p.fieldName == 'avatar');
+      final avatarProp = ir.rootClass.properties.firstWhere(
+        (p) => p.fieldName == 'avatar',
+      );
 
       // Check IR has content metadata
       expect(avatarProp.contentMediaType, 'image/png');
@@ -40,10 +41,7 @@ void main() {
       final schema = {
         'type': 'object',
         'properties': {
-          'data': {
-            'type': 'string',
-            'contentEncoding': 'base64',
-          },
+          'data': {'type': 'string', 'contentEncoding': 'base64'},
         },
         'required': ['data'],
       };
@@ -77,10 +75,7 @@ void main() {
       final schema = {
         'type': 'object',
         'properties': {
-          'data': {
-            'type': 'string',
-            'contentEncoding': 'base64',
-          },
+          'data': {'type': 'string', 'contentEncoding': 'base64'},
         },
       };
 
@@ -92,8 +87,9 @@ void main() {
       );
 
       final ir = generator.buildIr(schema);
-      final dataProp = ir.rootClass.properties
-          .firstWhere((p) => p.fieldName == 'data');
+      final dataProp = ir.rootClass.properties.firstWhere(
+        (p) => p.fieldName == 'data',
+      );
 
       // Should NOT extract content keywords when disabled
       expect(dataProp.contentEncoding, isNull);
@@ -123,8 +119,9 @@ void main() {
       );
 
       final ir = generator.buildIr(schema);
-      final htmlProp = ir.rootClass.properties
-          .firstWhere((p) => p.fieldName == 'html');
+      final htmlProp = ir.rootClass.properties.firstWhere(
+        (p) => p.fieldName == 'html',
+      );
 
       // Should capture media type
       expect(htmlProp.contentMediaType, 'text/html');
@@ -161,8 +158,9 @@ void main() {
       );
 
       final ir = generator.buildIr(schema);
-      final metadataProp = ir.rootClass.properties
-          .firstWhere((p) => p.fieldName == 'metadata');
+      final metadataProp = ir.rootClass.properties.firstWhere(
+        (p) => p.fieldName == 'metadata',
+      );
 
       // Should capture all content keywords
       expect(metadataProp.contentMediaType, 'application/json');
@@ -175,10 +173,7 @@ void main() {
       final schema = {
         'type': 'object',
         'properties': {
-          'optionalImage': {
-            'type': 'string',
-            'contentEncoding': 'base64',
-          },
+          'optionalImage': {'type': 'string', 'contentEncoding': 'base64'},
         },
         // optionalImage not in required
       };
@@ -203,10 +198,7 @@ void main() {
       final schema = {
         'type': 'object',
         'properties': {
-          'requiredData': {
-            'type': 'string',
-            'contentEncoding': 'base64',
-          },
+          'requiredData': {'type': 'string', 'contentEncoding': 'base64'},
         },
         'required': ['requiredData'],
       };
@@ -231,10 +223,7 @@ void main() {
       final schema = {
         'type': 'object',
         'properties': {
-          'hexData': {
-            'type': 'string',
-            'contentEncoding': 'base16',
-          },
+          'hexData': {'type': 'string', 'contentEncoding': 'base16'},
         },
       };
 
@@ -263,10 +252,7 @@ void main() {
       final schema = {
         'type': 'object',
         'properties': {
-          'b32Data': {
-            'type': 'string',
-            'contentEncoding': 'base32',
-          },
+          'b32Data': {'type': 'string', 'contentEncoding': 'base32'},
         },
       };
 
@@ -295,10 +281,7 @@ void main() {
       final schema = {
         'type': 'object',
         'properties': {
-          'qpData': {
-            'type': 'string',
-            'contentEncoding': 'quoted-printable',
-          },
+          'qpData': {'type': 'string', 'contentEncoding': 'quoted-printable'},
         },
       };
 
@@ -320,28 +303,16 @@ void main() {
 
       // Should include helper functions
       expect(code, contains('Uint8List _quotedPrintableDecode(String input)'));
-      expect(
-        code,
-        contains('String _quotedPrintableEncode(Uint8List bytes)'),
-      );
+      expect(code, contains('String _quotedPrintableEncode(Uint8List bytes)'));
     });
 
     test('multiple encodings in same schema', () {
       final schema = {
         'type': 'object',
         'properties': {
-          'base64Field': {
-            'type': 'string',
-            'contentEncoding': 'base64',
-          },
-          'base16Field': {
-            'type': 'string',
-            'contentEncoding': 'base16',
-          },
-          'base32Field': {
-            'type': 'string',
-            'contentEncoding': 'base32',
-          },
+          'base64Field': {'type': 'string', 'contentEncoding': 'base64'},
+          'base16Field': {'type': 'string', 'contentEncoding': 'base16'},
+          'base32Field': {'type': 'string', 'contentEncoding': 'base32'},
         },
       };
 
@@ -374,10 +345,7 @@ void main() {
       final schema = {
         'type': 'object',
         'properties': {
-          'data': {
-            'type': 'string',
-            'contentEncoding': 'unknown-encoding',
-          },
+          'data': {'type': 'string', 'contentEncoding': 'unknown-encoding'},
         },
       };
 
@@ -389,8 +357,9 @@ void main() {
       );
 
       final ir = generator.buildIr(schema);
-      final dataProp = ir.rootClass.properties
-          .firstWhere((p) => p.fieldName == 'data');
+      final dataProp = ir.rootClass.properties.firstWhere(
+        (p) => p.fieldName == 'data',
+      );
 
       // Should remain String for unsupported encoding
       expect(dataProp.typeRef, isA<PrimitiveTypeRef>());
@@ -422,8 +391,9 @@ void main() {
       );
 
       final ir = generator.buildIr(schema);
-      final metadataProp = ir.rootClass.properties
-          .firstWhere((p) => p.fieldName == 'metadata');
+      final metadataProp = ir.rootClass.properties.firstWhere(
+        (p) => p.fieldName == 'metadata',
+      );
 
       expect(metadataProp.contentSchemaTypeRef, isNotNull);
     });

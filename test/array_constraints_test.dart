@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -52,10 +52,7 @@ void main() {
         'properties': {
           'tags': {
             'type': 'array',
-            'contains': {
-              'type': 'string',
-              'pattern': r'^urgent',
-            },
+            'contains': {'type': 'string', 'pattern': r'^urgent'},
             'minContains': 1,
           },
         },
@@ -66,7 +63,10 @@ void main() {
       );
       final generated = generator.generate(schema);
 
-      expect(generated, contains("throwValidationError(itemPointer, 'pattern'"));
+      expect(
+        generated,
+        contains("throwValidationError(itemPointer, 'pattern'"),
+      );
       expect(generated, contains("throwValidationError(_ptr0, 'contains'"));
     });
 

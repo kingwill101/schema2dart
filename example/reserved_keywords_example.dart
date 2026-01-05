@@ -8,9 +8,9 @@ const schemaWithKeywords = {
     "const": {"type": "integer"},
     "if": {"type": "boolean"},
     "enum": {"type": "string"},
-    "switch": {"type": "number"}
+    "switch": {"type": "number"},
   },
-  "required": ["class"]
+  "required": ["class"],
 };
 
 // This generates:
@@ -60,7 +60,7 @@ void demonstrateReservedKeywords() {
   print('2. Maps back to original names in toJson/fromJson');
   print('3. Serialization/deserialization works transparently');
   print('4. Prevents Dart compilation errors');
-  
+
   // Usage example:
   /*
   final obj = MyClass(
@@ -88,12 +88,12 @@ void demonstrateNestedKeywords() {
         "type": "object",
         "properties": {
           "return": {"type": "string"},
-          "async": {"type": "boolean"}
-        }
-      }
-    }
+          "async": {"type": "boolean"},
+        },
+      },
+    },
   };
-  
+
   print('\nNested objects handle keywords too:');
   print('Each nested class safely escapes reserved words');
   print('Nested schema example: $nestedSchema');
@@ -103,9 +103,9 @@ void demonstrateEnumKeywords() {
   // Reserved keywords as enum values
   const enumSchema = {
     "type": "string",
-    "enum": ["class", "const", "if", "switch", "normal"]
+    "enum": ["class", "const", "if", "switch", "normal"],
   };
-  
+
   print('\nEnum values also handle keywords:');
   print('Enum cases use safe names with value mapping');
   print('Enum schema example: $enumSchema');
@@ -115,6 +115,6 @@ void main() {
   demonstrateReservedKeywords();
   demonstrateNestedKeywords();
   demonstrateEnumKeywords();
-  
+
   print('\n✅ All Dart reserved keywords are handled automatically!');
 }

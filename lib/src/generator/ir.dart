@@ -1,4 +1,4 @@
-part of 'package:schema2model/src/generator.dart';
+part of 'package:schema2dart/src/generator.dart';
 
 /// Intermediate representation root describing the generated model set.
 class SchemaIr {
@@ -99,22 +99,22 @@ class IrProperty {
   final List<Object?> examples;
   final String schemaPointer;
   final Map<String, Object?> extensionAnnotations;
-  
+
   /// MIME type of the content (e.g., "image/png", "application/json")
   final String? contentMediaType;
-  
+
   /// Encoding used for the content (e.g., "base64")
   final String? contentEncoding;
-  
+
   /// Schema for validating decoded content
   final Map<String, dynamic>? contentSchema;
 
   /// Resolved type for validating decoded content (when enabled)
   final TypeRef? contentSchemaTypeRef;
-  
+
   /// Property is read-only (managed by server, should not be sent in requests)
   final bool isReadOnly;
-  
+
   /// Property is write-only (should not be returned in responses, e.g., passwords)
   final bool isWriteOnly;
 
@@ -165,11 +165,7 @@ class IrEnumValue {
 
 /// Represents a sealed class for mixed-type enums
 class IrMixedEnum {
-  IrMixedEnum({
-    required this.name,
-    required this.variants,
-    this.description,
-  });
+  IrMixedEnum({required this.name, required this.variants, this.description});
 
   final String name;
   final List<IrMixedEnumVariant> variants;
@@ -228,7 +224,7 @@ class IrUnionVariant {
   final Set<String> requiredProperties;
   final Map<String, Object?> constProperties;
   final TypeRef? primitiveType;
-  
+
   /// Returns true if this variant represents a primitive type (not an object)
   bool get isPrimitive => primitiveType != null;
 }
@@ -331,10 +327,7 @@ class ApplicatorConstraint {
 }
 
 class ApplicatorBranch {
-  ApplicatorBranch({
-    required this.schemaPointer,
-    required this.typeRef,
-  });
+  ApplicatorBranch({required this.schemaPointer, required this.typeRef});
 
   final String schemaPointer;
   final TypeRef typeRef;

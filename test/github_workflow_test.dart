@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 import '../example/schemas/github_workflow/schema.dart' as model;
@@ -86,11 +86,11 @@ void main() {
     test('supports building strongly typed workflow instances', () {
       final workflow = model.GithubWorkflow(
         name: 'CI',
-        on_: model.GithubWorkflowOnObject(
+        on_: model.OnObject(
           workflowDispatch: null,
           push: model.RootSchemaOnPush(branches: ["main"]),
         ),
-        jobs: model.GithubWorkflowJobs(
+        jobs: model.Jobs(
           patternProperties: {
             'build': model.NormalJob(
               runsOn: model.NormalJobRunsOnString('ubuntu-latest'),
@@ -112,8 +112,10 @@ void main() {
             'CI': model.EnvObjectAdditionalPropertyString('true'),
           },
         ),
-        permissions: model.PermissionsObject(contents: model.PermissionsLevel.read),
-        concurrency: model.GithubWorkflowConcurrencyConcurrency(
+        permissions: model.PermissionsObject(
+          contents: model.PermissionsLevel.read,
+        ),
+        concurrency: model.Concurrency2Concurrency(
           group: 'ci-\${{ github.ref }}',
           cancelInProgress: model.ConcurrencyCancelInProgressBool(true),
         ),

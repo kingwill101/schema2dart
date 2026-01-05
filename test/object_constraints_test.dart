@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -20,8 +20,14 @@ void main() {
       );
       final generated = generator.generate(schema);
 
-      expect(generated, contains("throwValidationError(_ptr0, 'minProperties'"));
-      expect(generated, contains("throwValidationError(_ptr0, 'maxProperties'"));
+      expect(
+        generated,
+        contains("throwValidationError(_ptr0, 'minProperties'"),
+      );
+      expect(
+        generated,
+        contains("throwValidationError(_ptr0, 'maxProperties'"),
+      );
     });
 
     test('handles additionalProperties with schema', () {
@@ -61,9 +67,7 @@ void main() {
     test('handles propertyNames constraint', () {
       const schema = <String, dynamic>{
         'type': 'object',
-        'propertyNames': {
-          'pattern': r'^[a-z_]+$',
-        },
+        'propertyNames': {'pattern': r'^[a-z_]+$'},
       };
 
       final generator = SchemaGenerator(

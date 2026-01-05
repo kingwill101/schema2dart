@@ -6,12 +6,10 @@ import 'validation_error.dart';
 
 /// A map of the input parameters defined by the action. Each input parameter is a key/value pair. Input parameters are set as environment variables. The variable is prefixed with INPUT_ and converted to upper case.
 class RunsCompositeStepWith {
-
   const RunsCompositeStepWith();
 
   factory RunsCompositeStepWith.fromJson(Map<String, dynamic> json) {
-    return RunsCompositeStepWith(
-    );
+    return RunsCompositeStepWith();
   }
 
   Map<String, dynamic> toJson() {

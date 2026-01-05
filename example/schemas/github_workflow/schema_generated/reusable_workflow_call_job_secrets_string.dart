@@ -4,12 +4,11 @@
 
 enum ReusableWorkflowCallJobSecretsString { inherit }
 
-extension ReusableWorkflowCallJobSecretsStringJson on ReusableWorkflowCallJobSecretsString {
-  String toJson() => const {
-        ReusableWorkflowCallJobSecretsString.inherit: 'inherit',
-      }[this]!;
+extension ReusableWorkflowCallJobSecretsStringJson
+    on ReusableWorkflowCallJobSecretsString {
+  String toJson() =>
+      const {ReusableWorkflowCallJobSecretsString.inherit: 'inherit'}[this]!;
 
-  static ReusableWorkflowCallJobSecretsString fromJson(String value) => const {
-        'inherit': ReusableWorkflowCallJobSecretsString.inherit,
-      }[value]!;
+  static ReusableWorkflowCallJobSecretsString fromJson(String value) =>
+      const {'inherit': ReusableWorkflowCallJobSecretsString.inherit}[value]!;
 }

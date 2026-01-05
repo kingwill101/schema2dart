@@ -6,9 +6,9 @@ const schema = {
   "properties": {
     "name": {"type": "string"},
     "age": {"type": "integer"},
-    "email": {"type": "string", "format": "email"}
+    "email": {"type": "string", "format": "email"},
   },
-  "required": ["name", "age"]
+  "required": ["name", "age"],
 };
 
 // With generateHelpers: true, this generates:
@@ -20,16 +20,16 @@ void main() {
   // Easy parsing from JSON string
   // Example JSON payload:
   // {"name": "Alice", "age": 30, "email": "alice@example.com"}
-  
+
   // Using the generated helper function
   // final user = userFromJson(jsonString);
-  
-  // Easy serialization to JSON string  
+
+  // Easy serialization to JSON string
   // final output = userToJson(user);
-  
+
   print('Helper functions make JSON parsing convenient!');
   print('No need to manually call json.decode/json.encode');
-  
+
   // Without helpers, you would need to do:
   // final user = User.fromJson(json.decode(jsonString));
   // final output = json.encode(user.toJson());

@@ -9,18 +9,23 @@ class NumberConstraintsExample {
   /// Must be < 100
   /// Constraints: exclusiveMaximum: 100
   final double? exclusiveMaximum;
+
   /// Must be > 0
   /// Constraints: exclusiveMinimum: 0
   final double? exclusiveMinimum;
+
   /// Integer between 1 and 999
   /// Constraints: minimum: 1, maximum: 999
   final int? integerType;
+
   /// Must be <= 100
   /// Constraints: maximum: 100
   final double? maximum;
+
   /// Must be >= 0
   /// Constraints: minimum: 0
   final double? minimum;
+
   /// Must be multiple of 5
   /// Constraints: multipleOf: 5
   final double? multipleOf;
@@ -75,7 +80,11 @@ class NumberConstraintsExample {
     if (_value0 != null) {
       context?.markProperty(pointer, 'exclusiveMaximum');
       if (_value0 >= 100) {
-        throwValidationError(_ptr0, 'maximum', 'Expected value < 100 but found ' + _value0.toString() + '.');
+        throwValidationError(
+          _ptr0,
+          'maximum',
+          'Expected value < 100 but found ' + _value0.toString() + '.',
+        );
       }
     }
     final _ptr1 = appendJsonPointer(pointer, 'exclusiveMinimum');
@@ -83,7 +92,11 @@ class NumberConstraintsExample {
     if (_value1 != null) {
       context?.markProperty(pointer, 'exclusiveMinimum');
       if (_value1 <= 0) {
-        throwValidationError(_ptr1, 'minimum', 'Expected value > 0 but found ' + _value1.toString() + '.');
+        throwValidationError(
+          _ptr1,
+          'minimum',
+          'Expected value > 0 but found ' + _value1.toString() + '.',
+        );
       }
     }
     final _ptr2 = appendJsonPointer(pointer, 'integerType');
@@ -91,10 +104,18 @@ class NumberConstraintsExample {
     if (_value2 != null) {
       context?.markProperty(pointer, 'integerType');
       if (_value2 < 1) {
-        throwValidationError(_ptr2, 'minimum', 'Expected value >= 1 but found ' + _value2.toString() + '.');
+        throwValidationError(
+          _ptr2,
+          'minimum',
+          'Expected value >= 1 but found ' + _value2.toString() + '.',
+        );
       }
       if (_value2 > 999) {
-        throwValidationError(_ptr2, 'maximum', 'Expected value <= 999 but found ' + _value2.toString() + '.');
+        throwValidationError(
+          _ptr2,
+          'maximum',
+          'Expected value <= 999 but found ' + _value2.toString() + '.',
+        );
       }
     }
     final _ptr3 = appendJsonPointer(pointer, 'maximum');
@@ -102,7 +123,11 @@ class NumberConstraintsExample {
     if (_value3 != null) {
       context?.markProperty(pointer, 'maximum');
       if (_value3 > 100) {
-        throwValidationError(_ptr3, 'maximum', 'Expected value <= 100 but found ' + _value3.toString() + '.');
+        throwValidationError(
+          _ptr3,
+          'maximum',
+          'Expected value <= 100 but found ' + _value3.toString() + '.',
+        );
       }
     }
     final _ptr4 = appendJsonPointer(pointer, 'minimum');
@@ -110,13 +135,27 @@ class NumberConstraintsExample {
     if (_value4 != null) {
       context?.markProperty(pointer, 'minimum');
       if (_value4 < 0) {
-        throwValidationError(_ptr4, 'minimum', 'Expected value >= 0 but found ' + _value4.toString() + '.');
+        throwValidationError(
+          _ptr4,
+          'minimum',
+          'Expected value >= 0 but found ' + _value4.toString() + '.',
+        );
       }
     }
     final _ptr5 = appendJsonPointer(pointer, 'multipleOf');
     final _value5 = multipleOf;
     if (_value5 != null) {
       context?.markProperty(pointer, 'multipleOf');
+      final _remainderp5 = _value5 % 5;
+      if (_remainderp5 != 0) {
+        throwValidationError(
+          _ptr5,
+          'multipleOf',
+          'Expected value to be a multiple of 5 but found ' +
+              _value5.toString() +
+              '.',
+        );
+      }
     }
   }
 }

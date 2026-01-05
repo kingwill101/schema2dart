@@ -5,20 +5,26 @@
 import 'container_credentials.dart';
 import 'container_port.dart';
 import 'env.dart';
+import 'validation_error.dart';
 
 /// A container to run any steps in a job that don't already specify a container. If you have steps that use both script and container actions, the container actions will run as sibling containers on the same network with the same volume mounts.
 /// If you do not set a container, all steps will run directly on the host specified by runs-on unless a step refers to an action configured to run in a container.
 sealed class NormalJobContainer {
   const NormalJobContainer();
 
+  void validate({String pointer = '', ValidationContext? context});
+
   factory NormalJobContainer.fromJson(dynamic json) {
     if (json is String) return NormalJobContainerString(json);
     if (json is! Map<String, dynamic>) {
-      throw ArgumentError('Invalid NormalJobContainer value: ${json.runtimeType}');
+      throw ArgumentError(
+        'Invalid NormalJobContainer value: ${json.runtimeType}',
+      );
     }
     final keys = json.keys.toSet();
     final sortedKeys = keys.toList()..sort();
-    final requiredMatches = <NormalJobContainer Function(Map<String, dynamic>)>[];
+    final requiredMatches =
+        <NormalJobContainer Function(Map<String, dynamic>)>[];
     final requiredMatchNames = <String>[];
     if (keys.contains('image')) {
       requiredMatches.add(Container.fromJson);
@@ -28,13 +34,16 @@ sealed class NormalJobContainer {
       return requiredMatches.single(json);
     }
     if (requiredMatches.length > 1) {
-      throw ArgumentError('Ambiguous NormalJobContainer variant matched required-property heuristics: ${requiredMatchNames.join(', ')}');
+      throw ArgumentError(
+        'Ambiguous NormalJobContainer variant matched required-property heuristics: ${requiredMatchNames.join(', ')}',
+      );
     }
     return Container.fromJson(json);
   }
 
   dynamic toJson();
 }
+
 class NormalJobContainerString extends NormalJobContainer {
   final String value;
 
@@ -42,19 +51,28 @@ class NormalJobContainerString extends NormalJobContainer {
 
   @override
   dynamic toJson() => value;
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }
+
 class Container extends NormalJobContainer {
   /// If the image's container registry requires authentication to pull the image, you can use credentials to set a map of the username and password. The credentials are the same values that you would provide to the `docker login` command.
   final ContainerCredentials? credentials;
+
   /// Sets an array of environment variables in the container.
   final Env? env;
+
   /// The Docker image to use as the container to run the action. The value can be the Docker Hub image name or a registry name.
   final String image;
+
   /// Additional Docker container resource options. For a list of options, see https://docs.docker.com/engine/reference/commandline/create/#options.
   final String? options;
+
   /// Sets an array of ports to expose on the container.
   /// Constraints: minItems: 1
   final List<ContainerPort>? ports;
+
   /// Sets an array of volumes for the container to use. You can use volumes to share data between services or other steps in a job. You can specify named Docker volumes, anonymous Docker volumes, or bind mounts on the host.
   /// To specify a volume, you specify the source and destination path: <source>:<destinationPath>
   /// The <source> is a volume name or an absolute path on the host machine, and <destinationPath> is an absolute path in the container.
@@ -72,17 +90,32 @@ class Container extends NormalJobContainer {
 
   factory Container.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
-    final credentials = json['credentials'] == null ? null : ContainerCredentials.fromJson((json['credentials'] as Map).cast<String, dynamic>());
+    final credentials = json['credentials'] == null
+        ? null
+        : ContainerCredentials.fromJson(
+            (json['credentials'] as Map).cast<String, dynamic>(),
+          );
     remaining.remove('credentials');
-    final env = json['env'] == null ? null : Env.fromJson((json['env'] as Map).cast<String, dynamic>());
+    final env = json['env'] == null
+        ? null
+        : Env.fromJson((json['env'] as Map).cast<String, dynamic>());
     remaining.remove('env');
     final image = json['image'] as String;
     remaining.remove('image');
     final options = json['options'] as String?;
     remaining.remove('options');
-    final ports = json['ports'] == null ? null : (json['ports'] as List).map((e) => ContainerPort.fromJson((e as Map).cast<String, dynamic>())).toList();
+    final ports = json['ports'] == null
+        ? null
+        : (json['ports'] as List)
+              .map(
+                (e) =>
+                    ContainerPort.fromJson((e as Map).cast<String, dynamic>()),
+              )
+              .toList();
     remaining.remove('ports');
-    final volumes = json['volumes'] == null ? null : (json['volumes'] as List).map((e) => e as String).toList();
+    final volumes = json['volumes'] == null
+        ? null
+        : (json['volumes'] as List).map((e) => e as String).toList();
     remaining.remove('volumes');
     var unmatched = Map<String, dynamic>.from(remaining);
     if (unmatched.isNotEmpty) {
@@ -109,5 +142,104 @@ class Container extends NormalJobContainer {
     if (ports != null) map['ports'] = ports!.map((e) => e.toJson()).toList();
     if (volumes != null) map['volumes'] = volumes;
     return map;
+  }
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {
+    final _ptr0 = appendJsonPointer(pointer, 'credentials');
+    final _value0 = credentials;
+    if (_value0 != null) {
+      context?.markProperty(pointer, 'credentials');
+    }
+    final _ptr1 = appendJsonPointer(pointer, 'env');
+    final _value1 = env;
+    if (_value1 != null) {
+      context?.markProperty(pointer, 'env');
+    }
+    final _ptr2 = appendJsonPointer(pointer, 'image');
+    final _value2 = image;
+    context?.markProperty(pointer, 'image');
+    final _ptr3 = appendJsonPointer(pointer, 'options');
+    final _value3 = options;
+    if (_value3 != null) {
+      context?.markProperty(pointer, 'options');
+    }
+    final _ptr4 = appendJsonPointer(pointer, 'ports');
+    final _value4 = ports;
+    if (_value4 != null) {
+      context?.markProperty(pointer, 'ports');
+      if (_value4.length < 1) {
+        throwValidationError(
+          _ptr4,
+          'minItems',
+          'Expected at least 1 items but found ' +
+              _value4.length.toString() +
+              '.',
+        );
+      }
+      final _lenp4 = _value4.length;
+      final _evaluatedp4 = List<bool>.filled(_lenp4, false);
+      for (var i = 0; i < _lenp4; i++) {
+        final itemPointer = appendJsonPointer(_ptr4, i.toString());
+        final item = _value4[i];
+        final _jsonp4i = item.toJson();
+        final _constraintp4ic0_0 = context == null ? null : ValidationContext();
+        var _constraintp4im0_0 = false;
+        try {
+          final context = _constraintp4ic0_0;
+          final _constraintp4iv0_0 = _jsonp4i as double;
+          _constraintp4im0_0 = true;
+        } on ValidationError {
+        } catch (_) {}
+        final _constraintp4ic0_1 = context == null ? null : ValidationContext();
+        var _constraintp4im0_1 = false;
+        try {
+          final context = _constraintp4ic0_1;
+          final _constraintp4iv0_1 = _jsonp4i as String;
+          _constraintp4im0_1 = true;
+        } on ValidationError {
+        } catch (_) {}
+        final _constraintp4imatches0 = <bool>[
+          _constraintp4im0_0,
+          _constraintp4im0_1,
+        ];
+        final _constraintp4icount0 = _constraintp4imatches0
+            .where((value) => value)
+            .length;
+        if (_constraintp4icount0 != 1) {
+          throwValidationError(
+            itemPointer,
+            'oneOf',
+            'Expected exactly one subschema in #/definitions/container/properties/ports/items/oneOf to validate.',
+          );
+        }
+        if (context != null &&
+            _constraintp4im0_0 &&
+            _constraintp4ic0_0 != null) {
+          context.mergeFrom(_constraintp4ic0_0!);
+        }
+        if (context != null &&
+            _constraintp4im0_1 &&
+            _constraintp4ic0_1 != null) {
+          context.mergeFrom(_constraintp4ic0_1!);
+        }
+        _evaluatedp4[i] = true;
+        context?.markItem(_ptr4, i);
+      }
+    }
+    final _ptr5 = appendJsonPointer(pointer, 'volumes');
+    final _value5 = volumes;
+    if (_value5 != null) {
+      context?.markProperty(pointer, 'volumes');
+      if (_value5.length < 1) {
+        throwValidationError(
+          _ptr5,
+          'minItems',
+          'Expected at least 1 items but found ' +
+              _value5.length.toString() +
+              '.',
+        );
+      }
+    }
   }
 }

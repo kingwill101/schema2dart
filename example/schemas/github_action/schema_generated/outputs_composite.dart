@@ -10,9 +10,7 @@ import 'validation_error.dart';
 class OutputsComposite {
   final Map<String, OutputsCompositePatternProperty1>? patternProperties;
 
-  const OutputsComposite({
-    this.patternProperties,
-  });
+  const OutputsComposite({this.patternProperties});
 
   factory OutputsComposite.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
@@ -26,23 +24,25 @@ class OutputsComposite {
         final value = entry.value;
         var matched = false;
         if (!matched && RegExp('^[_a-zA-Z][a-zA-Z0-9_-]*\$').hasMatch(key)) {
-          patternPropertiesMap[key] = OutputsCompositePatternProperty1.fromJson((value as Map).cast<String, dynamic>());
+          patternPropertiesMap[key] = OutputsCompositePatternProperty1.fromJson(
+            (value as Map).cast<String, dynamic>(),
+          );
           matched = true;
         }
         if (!matched) {
           unmatchedAfterPattern[key] = value;
         }
       }
-      patternPropertiesValue = patternPropertiesMap.isEmpty ? null : patternPropertiesMap;
+      patternPropertiesValue = patternPropertiesMap.isEmpty
+          ? null
+          : patternPropertiesMap;
       unmatched = unmatchedAfterPattern;
     }
     if (unmatched.isNotEmpty) {
       final unexpected = unmatched.keys.join(', ');
       throw ArgumentError('Unexpected additional properties: $unexpected');
     }
-    return OutputsComposite(
-      patternProperties: patternPropertiesValue,
-    );
+    return OutputsComposite(patternProperties: patternPropertiesValue);
   }
 
   Map<String, dynamic> toJson() {

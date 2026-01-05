@@ -12,11 +12,18 @@ sealed class RunsCompositeStepShell {
   void validate({String pointer = '', ValidationContext? context});
 
   factory RunsCompositeStepShell.fromJson(dynamic json) {
-    throw ArgumentError('Invalid RunsCompositeStepShell value type: ${json.runtimeType}');
+    if (json is String)
+      return RunsCompositeStepShellValue2(
+        RunsCompositeStepShellVariant2Json.fromJson(json),
+      );
+    throw ArgumentError(
+      'Invalid RunsCompositeStepShell value type: ${json.runtimeType}',
+    );
   }
 
   dynamic toJson();
 }
+
 class RunsCompositeStepShellValue extends RunsCompositeStepShell {
   final dynamic value;
 
@@ -24,12 +31,19 @@ class RunsCompositeStepShellValue extends RunsCompositeStepShell {
 
   @override
   dynamic toJson() => value;
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }
+
 class RunsCompositeStepShellValue2 extends RunsCompositeStepShell {
   final RunsCompositeStepShellVariant2 value;
 
   const RunsCompositeStepShellValue2(this.value) : super();
 
   @override
-  dynamic toJson() => value;
+  dynamic toJson() => value.toJson();
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }

@@ -10,31 +10,40 @@ import 'validation_error.dart';
 
 class RunsCompositeStep {
   /// Prevents a job from failing when a step fails. Set to true to allow a job to pass when this step fails.
-  /// 
+  ///
   /// Default: false.
   final RunsCompositeStepContinueOnError? continueOnError;
+
   /// Sets a map of environment variables for only that step.
   final RunsCompositeStepEnv? env;
+
   /// A unique identifier for the step. You can use the `id` to reference the step in contexts.
   final String? id;
+
   /// You can use the if conditional to prevent a step from running unless a condition is met. You can use any supported context and expression to create a conditional.
   /// Expressions in an if conditional do not require the ${{ }} syntax. For more information, see https://help.github.com/en/articles/contexts-and-expression-syntax-for-github-actions.
   final String? if_;
+
   /// The name of the composite run step.
   final String? name;
+
   /// The command you want to run. This can be inline or a script in your action repository.
   final String? run;
+
   /// The shell where you want to run the command.
   final RunsCompositeStepShell? shell;
+
   /// Selects an action to run as part of a step in your job.
   final String? uses;
+
   /// A map of the input parameters defined by the action. Each input parameter is a key/value pair. Input parameters are set as environment variables. The variable is prefixed with INPUT_ and converted to upper case.
   final RunsCompositeStepWith? with_;
+
   /// Specifies the working directory where the command is run.
   final String? workingDirectory;
 
   const RunsCompositeStep({
-    this.continueOnError = false,
+    this.continueOnError = const RunsCompositeStepContinueOnErrorBool(false),
     this.env,
     this.id,
     this.if_,
@@ -48,9 +57,19 @@ class RunsCompositeStep {
 
   factory RunsCompositeStep.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
-    final continueOnError = (json['continue-on-error'] == null ? null : RunsCompositeStepContinueOnError.fromJson((json['continue-on-error'] as Map).cast<String, dynamic>())) ?? false;
+    final continueOnError =
+        (json['continue-on-error'] == null
+            ? null
+            : RunsCompositeStepContinueOnError.fromJson(
+                (json['continue-on-error'] as Map).cast<String, dynamic>(),
+              )) ??
+        const RunsCompositeStepContinueOnErrorBool(false);
     remaining.remove('continue-on-error');
-    final env = json['env'] == null ? null : RunsCompositeStepEnv.fromJson((json['env'] as Map).cast<String, dynamic>());
+    final env = json['env'] == null
+        ? null
+        : RunsCompositeStepEnv.fromJson(
+            (json['env'] as Map).cast<String, dynamic>(),
+          );
     remaining.remove('env');
     final id = json['id'] as String?;
     remaining.remove('id');
@@ -60,11 +79,19 @@ class RunsCompositeStep {
     remaining.remove('name');
     final run = json['run'] as String?;
     remaining.remove('run');
-    final shell = json['shell'] == null ? null : RunsCompositeStepShell.fromJson((json['shell'] as Map).cast<String, dynamic>());
+    final shell = json['shell'] == null
+        ? null
+        : RunsCompositeStepShell.fromJson(
+            (json['shell'] as Map).cast<String, dynamic>(),
+          );
     remaining.remove('shell');
     final uses = json['uses'] as String?;
     remaining.remove('uses');
-    final with_ = json['with'] == null ? null : RunsCompositeStepWith.fromJson((json['with'] as Map).cast<String, dynamic>());
+    final with_ = json['with'] == null
+        ? null
+        : RunsCompositeStepWith.fromJson(
+            (json['with'] as Map).cast<String, dynamic>(),
+          );
     remaining.remove('with');
     final workingDirectory = json['working-directory'] as String?;
     remaining.remove('working-directory');
@@ -89,7 +116,8 @@ class RunsCompositeStep {
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
-    if (continueOnError != null) map['continue-on-error'] = continueOnError!.toJson();
+    if (continueOnError != null)
+      map['continue-on-error'] = continueOnError!.toJson();
     if (env != null) map['env'] = env!.toJson();
     if (id != null) map['id'] = id;
     if (if_ != null) map['if'] = if_;
@@ -105,14 +133,97 @@ class RunsCompositeStep {
   void validate({String pointer = '', ValidationContext? context}) {
     final _ptr0 = appendJsonPointer(pointer, 'continue-on-error');
     final _value0 = continueOnError;
-    context?.annotate(_ptr0, 'default', false, schemaPointer: '#/definitions/runs-composite/properties/steps/items/properties/continue-on-error');
+    context?.annotate(
+      _ptr0,
+      'default',
+      false,
+      schemaPointer:
+          '#/definitions/runs-composite/properties/steps/items/properties/continue-on-error',
+    );
     if (_value0 != null) {
       context?.markProperty(pointer, 'continue-on-error');
+      final _jsonp0 = _value0.toJson();
+      final _constraintp0c0_0 = context == null ? null : ValidationContext();
+      var _constraintp0m0_0 = false;
+      try {
+        final context = _constraintp0c0_0;
+        final _constraintp0v0_0 = _jsonp0 as bool;
+        _constraintp0m0_0 = true;
+      } on ValidationError {
+      } catch (_) {}
+      final _constraintp0c0_1 = context == null ? null : ValidationContext();
+      var _constraintp0m0_1 = false;
+      try {
+        final context = _constraintp0c0_1;
+        final _constraintp0v0_1 = _jsonp0 as String;
+        _constraintp0m0_1 = true;
+      } on ValidationError {
+      } catch (_) {}
+      final _constraintp0matches0 = <bool>[
+        _constraintp0m0_0,
+        _constraintp0m0_1,
+      ];
+      final _constraintp0count0 = _constraintp0matches0
+          .where((value) => value)
+          .length;
+      if (_constraintp0count0 != 1) {
+        throwValidationError(
+          _ptr0,
+          'oneOf',
+          'Expected exactly one subschema in #/definitions/runs-composite/properties/steps/items/properties/continue-on-error/oneOf to validate.',
+        );
+      }
+      if (context != null && _constraintp0m0_0 && _constraintp0c0_0 != null) {
+        context.mergeFrom(_constraintp0c0_0!);
+      }
+      if (context != null && _constraintp0m0_1 && _constraintp0c0_1 != null) {
+        context.mergeFrom(_constraintp0c0_1!);
+      }
     }
     final _ptr1 = appendJsonPointer(pointer, 'env');
     final _value1 = env;
     if (_value1 != null) {
       context?.markProperty(pointer, 'env');
+      final _jsonp1 = _value1.toJson();
+      final _constraintp1c0_0 = context == null ? null : ValidationContext();
+      var _constraintp1m0_0 = false;
+      try {
+        final context = _constraintp1c0_0;
+        final _constraintp1v0_0 = RunsCompositeStepEnvObject.fromJson(
+          (_jsonp1 as Map).cast<String, dynamic>(),
+        );
+        _constraintp1v0_0.validate(pointer: _ptr1, context: context);
+        _constraintp1m0_0 = true;
+      } on ValidationError {
+      } catch (_) {}
+      final _constraintp1c0_1 = context == null ? null : ValidationContext();
+      var _constraintp1m0_1 = false;
+      try {
+        final context = _constraintp1c0_1;
+        final _constraintp1v0_1 = _jsonp1 as String;
+        _constraintp1m0_1 = true;
+      } on ValidationError {
+      } catch (_) {}
+      final _constraintp1matches0 = <bool>[
+        _constraintp1m0_0,
+        _constraintp1m0_1,
+      ];
+      final _constraintp1count0 = _constraintp1matches0
+          .where((value) => value)
+          .length;
+      if (_constraintp1count0 != 1) {
+        throwValidationError(
+          _ptr1,
+          'oneOf',
+          'Expected exactly one subschema in #/definitions/runs-composite/properties/steps/items/properties/env/oneOf to validate.',
+        );
+      }
+      if (context != null && _constraintp1m0_0 && _constraintp1c0_0 != null) {
+        context.mergeFrom(_constraintp1c0_0!);
+      }
+      if (context != null && _constraintp1m0_1 && _constraintp1c0_1 != null) {
+        context.mergeFrom(_constraintp1c0_1!);
+      }
     }
     final _ptr2 = appendJsonPointer(pointer, 'id');
     final _value2 = id;
@@ -138,6 +249,42 @@ class RunsCompositeStep {
     final _value6 = shell;
     if (_value6 != null) {
       context?.markProperty(pointer, 'shell');
+      final _jsonp6 = _value6.toJson();
+      final _constraintp6c0_0 = context == null ? null : ValidationContext();
+      var _constraintp6m0_0 = false;
+      try {
+        final context = _constraintp6c0_0;
+        final _constraintp6v0_0 = _jsonp6;
+        _constraintp6m0_0 = true;
+      } on ValidationError {
+      } catch (_) {}
+      final _constraintp6c0_1 = context == null ? null : ValidationContext();
+      var _constraintp6m0_1 = false;
+      try {
+        final context = _constraintp6c0_1;
+        final _constraintp6v0_1 = RunsCompositeStepShellVariant2Json.fromJson(
+          _jsonp6 as String,
+        );
+        _constraintp6m0_1 = true;
+      } on ValidationError {
+      } catch (_) {}
+      final _constraintp6matches0 = <bool>[
+        _constraintp6m0_0,
+        _constraintp6m0_1,
+      ];
+      if (!_constraintp6matches0.any((value) => value)) {
+        throwValidationError(
+          _ptr6,
+          'anyOf',
+          'Expected at least one subschema in #/definitions/runs-composite/properties/steps/items/properties/shell/anyOf to validate.',
+        );
+      }
+      if (context != null && _constraintp6m0_0 && _constraintp6c0_0 != null) {
+        context.mergeFrom(_constraintp6c0_0!);
+      }
+      if (context != null && _constraintp6m0_1 && _constraintp6c0_1 != null) {
+        context.mergeFrom(_constraintp6c0_1!);
+      }
     }
     final _ptr7 = appendJsonPointer(pointer, 'uses');
     final _value7 = uses;
@@ -154,12 +301,18 @@ class RunsCompositeStep {
     if (_value9 != null) {
       context?.markProperty(pointer, 'working-directory');
     }
-     final _constraint0Match0 = run != null && shell != null;
-     final _constraint0Match1 = uses != null;
-     final _constraint0Matches = <bool>[_constraint0Match0, _constraint0Match1];
-     final _constraint0MatchCount = _constraint0Matches.where((value) => value).length;
-     if (_constraint0MatchCount != 1) {
-       throwValidationError(pointer, 'oneOf', 'Expected exactly one of the combinations defined at #/definitions/runs-composite/properties/steps/items/oneOf to be satisfied (["run", "shell"], ["uses"]).');
-     }
+    final _constraint0Match0 = run != null && shell != null;
+    final _constraint0Match1 = uses != null;
+    final _constraint0Matches = <bool>[_constraint0Match0, _constraint0Match1];
+    final _constraint0MatchCount = _constraint0Matches
+        .where((value) => value)
+        .length;
+    if (_constraint0MatchCount != 1) {
+      throwValidationError(
+        pointer,
+        'oneOf',
+        'Expected exactly one of the combinations defined at #/definitions/runs-composite/properties/steps/items/oneOf to be satisfied (["run", "shell"], ["uses"]).',
+      );
+    }
   }
 }

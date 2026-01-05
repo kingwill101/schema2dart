@@ -1,4 +1,4 @@
-part of 'package:schema2model/src/generator.dart';
+part of 'package:schema2dart/src/generator.dart';
 
 const IrHelper _validationHelper = IrHelper(
   name: 'ValidationError',
@@ -264,12 +264,12 @@ bool _isValidRegex(String value) {
 String _elementClassName(String base) {
   // Use the improved singularize function
   final singularized = _SchemaWalker._singularize(base);
-  
+
   // Only add 'Item' suffix if singularization didn't change the word
   // (meaning it wasn't a plural form)
   if (singularized == base) {
     return '${base}Item';
   }
-  
+
   return singularized;
 }

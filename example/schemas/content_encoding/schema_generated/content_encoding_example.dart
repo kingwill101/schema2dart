@@ -7,10 +7,13 @@ import 'validation_error.dart';
 /// Demonstrates contentEncoding and contentMediaType
 class ContentEncodingExample {
   final String? binaryData;
+
   /// HTML content
   final String? htmlContent;
+
   /// Base64 encoded PNG image
   final String? image;
+
   /// Base64 encoded JSON
   final String? jsonData;
 

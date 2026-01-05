@@ -9,10 +9,8 @@ import 'package:path/path.dart' as p;
 import 'generator.dart';
 
 class SchemaToDartBuilder implements Builder {
-  SchemaToDartBuilder(
-    this._options, {
-    List<Glob>? includeGlobs,
-  }) : _includeGlobs = includeGlobs ?? _defaultIncludeGlobs;
+  SchemaToDartBuilder(this._options, {List<Glob>? includeGlobs})
+    : _includeGlobs = includeGlobs ?? _defaultIncludeGlobs;
 
   factory SchemaToDartBuilder.fromOptions(BuilderOptions options) {
     final rootClass = options.config['root_class'] as String?;
@@ -57,19 +55,31 @@ class SchemaToDartBuilder implements Builder {
       options.config['emit_validation_helpers'],
       true,
     );
-    final enableFormatHints =
-        _parseBool(options.config['enable_format_hints'], false);
-    final enableFormatAssertions =
-        _parseBool(options.config['enable_format_assertions'], false);
-    final enableContentKeywords =
-        _parseBool(options.config['enable_content_keywords'], false);
-    final enableContentValidation =
-        _parseBool(options.config['enable_content_validation'], false);
+    final enableFormatHints = _parseBool(
+      options.config['enable_format_hints'],
+      false,
+    );
+    final enableFormatAssertions = _parseBool(
+      options.config['enable_format_assertions'],
+      false,
+    );
+    final enableContentKeywords = _parseBool(
+      options.config['enable_content_keywords'],
+      false,
+    );
+    final enableContentValidation = _parseBool(
+      options.config['enable_content_validation'],
+      false,
+    );
     final emitUsageDocs = _parseBool(options.config['emit_usage_docs'], false);
-    final generateHelpers =
-        _parseBool(options.config['generate_helpers'], false);
-    final emitReadmeSnippets =
-        _parseBool(options.config['emit_readme_snippets'], false);
+    final generateHelpers = _parseBool(
+      options.config['generate_helpers'],
+      false,
+    );
+    final emitReadmeSnippets = _parseBool(
+      options.config['emit_readme_snippets'],
+      false,
+    );
 
     return SchemaToDartBuilder(
       SchemaGeneratorOptions(
@@ -98,12 +108,10 @@ class SchemaToDartBuilder implements Builder {
   final SchemaGeneratorOptions _options;
   final List<Glob> _includeGlobs;
 
-  static final List<Glob> _defaultIncludeGlobs = List.unmodifiable(
-    [
-      Glob('**/*.schema.json'),
-      Glob('**/*.json'),
-    ],
-  );
+  static final List<Glob> _defaultIncludeGlobs = List.unmodifiable([
+    Glob('**/*.schema.json'),
+    Glob('**/*.json'),
+  ]);
 
   static bool _parseBool(Object? value, bool fallback) {
     if (value is bool) return value;
@@ -147,8 +155,8 @@ class SchemaToDartBuilder implements Builder {
 
   @override
   Map<String, List<String>> get buildExtensions => const {
-        '.json': ['.dart'],
-      };
+    '.json': ['.dart'],
+  };
 
   @override
   Future<void> build(BuildStep buildStep) async {
@@ -175,7 +183,7 @@ class SchemaToDartBuilder implements Builder {
     final baseUri = Uri.file(absoluteInputPath);
     final cachePath =
         _options.networkCachePath ??
-        p.join('.dart_tool', 'schema2model', 'cache');
+        p.join('.dart_tool', 'schema2dart', 'cache');
     final absoluteCachePath = p.isAbsolute(cachePath)
         ? cachePath
         : p.join(Directory.current.path, cachePath);

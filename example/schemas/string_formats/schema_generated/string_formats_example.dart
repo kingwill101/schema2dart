@@ -7,60 +7,69 @@ import 'validation_error.dart';
 /// Demonstrates string format validation
 class StringFormatsExample {
   /// Format: date (format hints disabled).
-  /// 
+  ///
   /// Calendar date as defined by RFC 3339 full-date.
-  /// 
+  ///
   /// See https://json-schema.org/draft/2020-12/json-schema-validation.html#name-dates-times-and-duration.
   final String? date;
+
   /// Format: date-time (format hints disabled).
-  /// 
+  ///
   /// Date and time as defined by RFC 3339 date-time.
-  /// 
+  ///
   /// See https://json-schema.org/draft/2020-12/json-schema-validation.html#name-dates-times-and-duration.
   final String? dateTime;
+
   /// Format: email (format hints disabled).
-  /// 
+  ///
   /// Email address as defined by RFC 5321 Mailbox.
-  /// 
+  ///
   /// See https://json-schema.org/draft/2020-12/json-schema-validation.html#name-email-addresses.
   final String? email;
+
   /// Format: hostname (format hints disabled).
-  /// 
+  ///
   /// Hostname as defined by RFC 1123.
-  /// 
+  ///
   /// See https://json-schema.org/draft/2020-12/json-schema-validation.html#name-hostnames.
   final String? hostname;
+
   /// Format: ipv4 (format hints disabled).
-  /// 
+  ///
   /// IPv4 address as defined by RFC 2673 section 3.2.
-  /// 
+  ///
   /// See https://json-schema.org/draft/2020-12/json-schema-validation.html#name-ip-addresses.
   final String? ipv4;
+
   /// Format: ipv6 (format hints disabled).
-  /// 
+  ///
   /// IPv6 address as defined by RFC 4291.
-  /// 
+  ///
   /// See https://json-schema.org/draft/2020-12/json-schema-validation.html#name-ip-addresses.
   final String? ipv6;
+
   /// Must start with uppercase letter followed by lowercase
   /// Constraints: pattern: ^[A-Z][a-z]+$
   final String? patternString;
+
   /// Format: time (no type mapping available).
-  /// 
+  ///
   /// Time of day as defined by RFC 3339 full-time.
-  /// 
+  ///
   /// See https://json-schema.org/draft/2020-12/json-schema-validation.html#name-dates-times-and-duration.
   final String? time;
+
   /// Format: uri (format hints disabled).
-  /// 
+  ///
   /// URI as defined by RFC 3986.
-  /// 
+  ///
   /// See https://json-schema.org/draft/2020-12/json-schema-validation.html#name-resource-identifiers.
   final String? uri;
+
   /// Format: uuid (format hints disabled).
-  /// 
+  ///
   /// Universally Unique Identifier as defined by RFC 4122.
-  /// 
+  ///
   /// See https://json-schema.org/draft/2020-12/json-schema-validation.html#name-resource-identifiers.
   final String? uuid;
 
@@ -165,7 +174,13 @@ class StringFormatsExample {
       context?.markProperty(pointer, 'patternString');
       final _patternp6 = RegExp('^[A-Z][a-z]+\$');
       if (!_patternp6.hasMatch(_value6)) {
-        throwValidationError(_ptr6, 'pattern', 'Expected value to match pattern ^[A-Z][a-z]+\$ but found ' + _value6 + '.');
+        throwValidationError(
+          _ptr6,
+          'pattern',
+          'Expected value to match pattern ^[A-Z][a-z]+\$ but found ' +
+              _value6 +
+              '.',
+        );
       }
     }
     final _ptr7 = appendJsonPointer(pointer, 'time');

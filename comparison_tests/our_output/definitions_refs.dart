@@ -5,21 +5,19 @@ class DefinitionsRefs {
   final Address? home;
   final Address? work;
 
-  const DefinitionsRefs({
-    this.home,
-    this.work,
-  });
+  const DefinitionsRefs({this.home, this.work});
 
   factory DefinitionsRefs.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
-    final home = json['home'] == null ? null : Address.fromJson((json['home'] as Map).cast<String, dynamic>());
+    final home = json['home'] == null
+        ? null
+        : Address.fromJson((json['home'] as Map).cast<String, dynamic>());
     remaining.remove('home');
-    final work = json['work'] == null ? null : Address.fromJson((json['work'] as Map).cast<String, dynamic>());
+    final work = json['work'] == null
+        ? null
+        : Address.fromJson((json['work'] as Map).cast<String, dynamic>());
     remaining.remove('work');
-    return DefinitionsRefs(
-      home: home,
-      work: work,
-    );
+    return DefinitionsRefs(home: home, work: work);
   }
 
   Map<String, dynamic> toJson() {
@@ -34,10 +32,7 @@ class Address {
   final String city;
   final String street;
 
-  const Address({
-    required this.city,
-    required this.street,
-  });
+  const Address({required this.city, required this.street});
 
   factory Address.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
@@ -45,10 +40,7 @@ class Address {
     remaining.remove('city');
     final street = json['street'] as String;
     remaining.remove('street');
-    return Address(
-      city: city,
-      street: street,
-    );
+    return Address(city: city, street: street);
   }
 
   Map<String, dynamic> toJson() {

@@ -10,35 +10,54 @@ sealed class RunsDockerEnvObjectAdditionalProperty {
   void validate({String pointer = '', ValidationContext? context});
 
   factory RunsDockerEnvObjectAdditionalProperty.fromJson(dynamic json) {
-    if (json is String) return RunsDockerEnvObjectAdditionalPropertyString(json);
-    if (json is num) return RunsDockerEnvObjectAdditionalPropertyNum(json);
+    if (json is String)
+      return RunsDockerEnvObjectAdditionalPropertyString(json);
+    if (json is num)
+      return RunsDockerEnvObjectAdditionalPropertyNum(json.toDouble());
     if (json is bool) return RunsDockerEnvObjectAdditionalPropertyBool(json);
-    throw ArgumentError('Invalid RunsDockerEnvObjectAdditionalProperty value type: ${json.runtimeType}');
+    throw ArgumentError(
+      'Invalid RunsDockerEnvObjectAdditionalProperty value type: ${json.runtimeType}',
+    );
   }
 
   dynamic toJson();
 }
-class RunsDockerEnvObjectAdditionalPropertyString extends RunsDockerEnvObjectAdditionalProperty {
+
+class RunsDockerEnvObjectAdditionalPropertyString
+    extends RunsDockerEnvObjectAdditionalProperty {
   final String value;
 
   const RunsDockerEnvObjectAdditionalPropertyString(this.value) : super();
 
   @override
   dynamic toJson() => value;
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }
-class RunsDockerEnvObjectAdditionalPropertyNum extends RunsDockerEnvObjectAdditionalProperty {
+
+class RunsDockerEnvObjectAdditionalPropertyNum
+    extends RunsDockerEnvObjectAdditionalProperty {
   final double value;
 
   const RunsDockerEnvObjectAdditionalPropertyNum(this.value) : super();
 
   @override
   dynamic toJson() => value;
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }
-class RunsDockerEnvObjectAdditionalPropertyBool extends RunsDockerEnvObjectAdditionalProperty {
+
+class RunsDockerEnvObjectAdditionalPropertyBool
+    extends RunsDockerEnvObjectAdditionalProperty {
   final bool value;
 
   const RunsDockerEnvObjectAdditionalPropertyBool(this.value) : super();
 
   @override
   dynamic toJson() => value;
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }

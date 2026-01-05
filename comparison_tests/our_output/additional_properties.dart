@@ -5,10 +5,7 @@ class AdditionalProperties {
   final String? known;
   final Map<String, double>? additionalProperties;
 
-  const AdditionalProperties({
-    this.known,
-    this.additionalProperties,
-  });
+  const AdditionalProperties({this.known, this.additionalProperties});
 
   factory AdditionalProperties.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
@@ -22,7 +19,9 @@ class AdditionalProperties {
         final value = entry.value;
         additionalPropertiesMap[entry.key] = value as double;
       }
-      additionalPropertiesValue = additionalPropertiesMap.isEmpty ? null : additionalPropertiesMap;
+      additionalPropertiesValue = additionalPropertiesMap.isEmpty
+          ? null
+          : additionalPropertiesMap;
       unmatched = <String, dynamic>{};
     } else {
       additionalPropertiesValue = null;

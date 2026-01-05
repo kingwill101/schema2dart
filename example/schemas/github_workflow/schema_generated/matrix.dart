@@ -4,12 +4,15 @@
 
 import 'matrix_object_additional_property.dart';
 import 'matrix_object_pattern_property1.dart';
+import 'validation_error.dart';
 
 /// A build matrix is a set of different configurations of the virtual environment. For example you might run a job against more than one supported version of a language, operating system, or tool. Each configuration is a copy of the job that runs and reports a status.
 /// You can specify a matrix by supplying an array for the configuration options. For example, if the GitHub virtual environment supports Node.js versions 6, 8, and 10 you could specify an array of those versions in the matrix.
 /// When you define a matrix of operating systems, you must set the required runs-on keyword to the operating system of the current job, rather than hard-coding the operating system name. To access the operating system name, you can use the matrix.os context parameter to set runs-on. For more information, see https://help.github.com/en/articles/contexts-and-expression-syntax-for-github-actions.
 sealed class Matrix {
   const Matrix();
+
+  void validate({String pointer = '', ValidationContext? context});
 
   factory Matrix.fromJson(dynamic json) {
     if (json is String) return MatrixString(json);
@@ -23,14 +26,13 @@ sealed class Matrix {
 
   dynamic toJson();
 }
+
 class MatrixObject extends Matrix {
   final Map<String, MatrixObjectPatternProperty1>? patternProperties;
   final Map<String, MatrixObjectAdditionalProperty>? additionalProperties;
 
-  const MatrixObject({
-    this.patternProperties,
-    this.additionalProperties,
-  }) : super();
+  const MatrixObject({this.patternProperties, this.additionalProperties})
+    : super();
 
   factory MatrixObject.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
@@ -44,24 +46,34 @@ class MatrixObject extends Matrix {
         final value = entry.value;
         var matched = false;
         if (!matched && RegExp('^(in|ex)clude\$').hasMatch(key)) {
-          patternPropertiesMap[key] = MatrixObjectPatternProperty1.fromJson((value as Map).cast<String, dynamic>());
+          patternPropertiesMap[key] = MatrixObjectPatternProperty1.fromJson(
+            (value as Map).cast<String, dynamic>(),
+          );
           matched = true;
         }
         if (!matched) {
           unmatchedAfterPattern[key] = value;
         }
       }
-      patternPropertiesValue = patternPropertiesMap.isEmpty ? null : patternPropertiesMap;
+      patternPropertiesValue = patternPropertiesMap.isEmpty
+          ? null
+          : patternPropertiesMap;
       unmatched = unmatchedAfterPattern;
     }
     Map<String, MatrixObjectAdditionalProperty>? additionalPropertiesValue;
     if (unmatched.isNotEmpty) {
-      final additionalPropertiesMap = <String, MatrixObjectAdditionalProperty>{};
+      final additionalPropertiesMap =
+          <String, MatrixObjectAdditionalProperty>{};
       for (final entry in unmatched.entries) {
         final value = entry.value;
-        additionalPropertiesMap[entry.key] = MatrixObjectAdditionalProperty.fromJson((value as Map).cast<String, dynamic>());
+        additionalPropertiesMap[entry.key] =
+            MatrixObjectAdditionalProperty.fromJson(
+              (value as Map).cast<String, dynamic>(),
+            );
       }
-      additionalPropertiesValue = additionalPropertiesMap.isEmpty ? null : additionalPropertiesMap;
+      additionalPropertiesValue = additionalPropertiesMap.isEmpty
+          ? null
+          : additionalPropertiesMap;
       unmatched = <String, dynamic>{};
     } else {
       additionalPropertiesValue = null;
@@ -96,7 +108,150 @@ class MatrixObject extends Matrix {
     }
     return map;
   }
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {
+    final _additionalPropertiesMap = additionalProperties;
+    if (_additionalPropertiesMap != null) {
+      _additionalPropertiesMap.forEach((key, value) {
+        final itemPointer = appendJsonPointer(pointer, key);
+        context?.markProperty(pointer, key);
+        final _jsonadditionalProperties = value.toJson();
+        final _constraintadditionalPropertiesc0_0 = context == null
+            ? null
+            : ValidationContext();
+        var _constraintadditionalPropertiesm0_0 = false;
+        try {
+          final context = _constraintadditionalPropertiesc0_0;
+          final _constraintadditionalPropertiesv0_0 =
+              (_jsonadditionalProperties as List)
+                  .map(
+                    (e) => Configuration.fromJson(
+                      (e as Map).cast<String, dynamic>(),
+                    ),
+                  )
+                  .toList();
+          if (_constraintadditionalPropertiesv0_0.length < 1) {
+            throwValidationError(
+              itemPointer,
+              'minItems',
+              'Expected at least 1 items but found ' +
+                  _constraintadditionalPropertiesv0_0.length.toString() +
+                  '.',
+            );
+          }
+          _constraintadditionalPropertiesm0_0 = true;
+        } on ValidationError {
+        } catch (_) {}
+        final _constraintadditionalPropertiesc0_1 = context == null
+            ? null
+            : ValidationContext();
+        var _constraintadditionalPropertiesm0_1 = false;
+        try {
+          final context = _constraintadditionalPropertiesc0_1;
+          final _constraintadditionalPropertiesv0_1 =
+              _jsonadditionalProperties as String;
+          _constraintadditionalPropertiesm0_1 = true;
+        } on ValidationError {
+        } catch (_) {}
+        final _constraintadditionalPropertiesmatches0 = <bool>[
+          _constraintadditionalPropertiesm0_0,
+          _constraintadditionalPropertiesm0_1,
+        ];
+        final _constraintadditionalPropertiescount0 =
+            _constraintadditionalPropertiesmatches0
+                .where((value) => value)
+                .length;
+        if (_constraintadditionalPropertiescount0 != 1) {
+          throwValidationError(
+            itemPointer,
+            'oneOf',
+            'Expected exactly one subschema in #/definitions/matrix/oneOf/0/additionalProperties/oneOf to validate.',
+          );
+        }
+        if (context != null &&
+            _constraintadditionalPropertiesm0_0 &&
+            _constraintadditionalPropertiesc0_0 != null) {
+          context.mergeFrom(_constraintadditionalPropertiesc0_0!);
+        }
+        if (context != null &&
+            _constraintadditionalPropertiesm0_1 &&
+            _constraintadditionalPropertiesc0_1 != null) {
+          context.mergeFrom(_constraintadditionalPropertiesc0_1!);
+        }
+      });
+    }
+    final _patternPropertiesMap = patternProperties;
+    if (_patternPropertiesMap != null) {
+      _patternPropertiesMap.forEach((key, value) {
+        final itemPointer = appendJsonPointer(pointer, key);
+        context?.markProperty(pointer, key);
+        final _jsonpatternProperties = value.toJson();
+        final _constraintpatternPropertiesc0_0 = context == null
+            ? null
+            : ValidationContext();
+        var _constraintpatternPropertiesm0_0 = false;
+        try {
+          final context = _constraintpatternPropertiesc0_0;
+          final _constraintpatternPropertiesv0_0 =
+              _jsonpatternProperties as String;
+          _constraintpatternPropertiesm0_0 = true;
+        } on ValidationError {
+        } catch (_) {}
+        final _constraintpatternPropertiesc0_1 = context == null
+            ? null
+            : ValidationContext();
+        var _constraintpatternPropertiesm0_1 = false;
+        try {
+          final context = _constraintpatternPropertiesc0_1;
+          final _constraintpatternPropertiesv0_1 =
+              (_jsonpatternProperties as List)
+                  .map(
+                    (e) => MatrixObjectPatternProperty1ArrayItem.fromJson(
+                      (e as Map).cast<String, dynamic>(),
+                    ),
+                  )
+                  .toList();
+          if (_constraintpatternPropertiesv0_1.length < 1) {
+            throwValidationError(
+              itemPointer,
+              'minItems',
+              'Expected at least 1 items but found ' +
+                  _constraintpatternPropertiesv0_1.length.toString() +
+                  '.',
+            );
+          }
+          _constraintpatternPropertiesm0_1 = true;
+        } on ValidationError {
+        } catch (_) {}
+        final _constraintpatternPropertiesmatches0 = <bool>[
+          _constraintpatternPropertiesm0_0,
+          _constraintpatternPropertiesm0_1,
+        ];
+        final _constraintpatternPropertiescount0 =
+            _constraintpatternPropertiesmatches0.where((value) => value).length;
+        if (_constraintpatternPropertiescount0 != 1) {
+          throwValidationError(
+            itemPointer,
+            'oneOf',
+            'Expected exactly one subschema in #/definitions/matrix/oneOf/0/patternProperties/^(in|ex)clude\$/oneOf to validate.',
+          );
+        }
+        if (context != null &&
+            _constraintpatternPropertiesm0_0 &&
+            _constraintpatternPropertiesc0_0 != null) {
+          context.mergeFrom(_constraintpatternPropertiesc0_0!);
+        }
+        if (context != null &&
+            _constraintpatternPropertiesm0_1 &&
+            _constraintpatternPropertiesc0_1 != null) {
+          context.mergeFrom(_constraintpatternPropertiesc0_1!);
+        }
+      });
+    }
+  }
 }
+
 class MatrixString extends Matrix {
   final String value;
 
@@ -104,4 +259,7 @@ class MatrixString extends Matrix {
 
   @override
   dynamic toJson() => value;
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }

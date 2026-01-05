@@ -6,12 +6,12 @@ enum PermissionsString { readAll, writeAll }
 
 extension PermissionsStringJson on PermissionsString {
   String toJson() => const {
-        PermissionsString.readAll: 'read-all',
-        PermissionsString.writeAll: 'write-all',
-      }[this]!;
+    PermissionsString.readAll: 'read-all',
+    PermissionsString.writeAll: 'write-all',
+  }[this]!;
 
   static PermissionsString fromJson(String value) => const {
-        'read-all': PermissionsString.readAll,
-        'write-all': PermissionsString.writeAll,
-      }[value]!;
+    'read-all': PermissionsString.readAll,
+    'write-all': PermissionsString.writeAll,
+  }[value]!;
 }

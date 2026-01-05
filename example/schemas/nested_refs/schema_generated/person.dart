@@ -10,25 +10,19 @@ class Person {
   final int? age;
   final String name;
 
-  const Person({
-    this.address,
-    this.age,
-    required this.name,
-  });
+  const Person({this.address, this.age, required this.name});
 
   factory Person.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
-    final address = json['address'] == null ? null : Address.fromJson((json['address'] as Map).cast<String, dynamic>());
+    final address = json['address'] == null
+        ? null
+        : Address.fromJson((json['address'] as Map).cast<String, dynamic>());
     remaining.remove('address');
     final age = json['age'] as int?;
     remaining.remove('age');
     final name = json['name'] as String;
     remaining.remove('name');
-    return Person(
-      address: address,
-      age: age,
-      name: name,
-    );
+    return Person(address: address, age: age, name: name);
   }
 
   Map<String, dynamic> toJson() {

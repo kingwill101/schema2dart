@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -9,10 +9,7 @@ void main() {
         'properties': {
           'value': {
             'type': 'string',
-            'not': {
-              'type': 'string',
-              'pattern': '^a',
-            },
+            'not': {'type': 'string', 'pattern': '^a'},
           },
         },
       };
@@ -33,14 +30,8 @@ void main() {
           'value': {
             'type': 'string',
             'allOf': [
-              {
-                'type': 'string',
-                'minLength': 3,
-              },
-              {
-                'type': 'string',
-                'pattern': '^a',
-              },
+              {'type': 'string', 'minLength': 3},
+              {'type': 'string', 'pattern': '^a'},
             ],
           },
         },
@@ -52,7 +43,10 @@ void main() {
       final output = generator.generate(schema);
 
       expect(output, contains("throwValidationError(_ptr0, 'allOf'"));
-      expect(output, contains('Expected all subschemas in #/properties/value/allOf'));
+      expect(
+        output,
+        contains('Expected all subschemas in #/properties/value/allOf'),
+      );
     });
 
     test('emits anyOf validation', () {
@@ -62,14 +56,8 @@ void main() {
           'value': {
             'type': 'string',
             'anyOf': [
-              {
-                'type': 'string',
-                'minLength': 3,
-              },
-              {
-                'type': 'string',
-                'pattern': '^a',
-              },
+              {'type': 'string', 'minLength': 3},
+              {'type': 'string', 'pattern': '^a'},
             ],
           },
         },
@@ -81,7 +69,10 @@ void main() {
       final output = generator.generate(schema);
 
       expect(output, contains("throwValidationError(_ptr0, 'anyOf'"));
-      expect(output, contains('Expected at least one subschema in #/properties/value/anyOf'));
+      expect(
+        output,
+        contains('Expected at least one subschema in #/properties/value/anyOf'),
+      );
     });
 
     test('emits oneOf validation', () {
@@ -91,14 +82,8 @@ void main() {
           'value': {
             'type': 'string',
             'oneOf': [
-              {
-                'type': 'string',
-                'minLength': 3,
-              },
-              {
-                'type': 'string',
-                'pattern': '^a',
-              },
+              {'type': 'string', 'minLength': 3},
+              {'type': 'string', 'pattern': '^a'},
             ],
           },
         },
@@ -110,7 +95,10 @@ void main() {
       final output = generator.generate(schema);
 
       expect(output, contains("throwValidationError(_ptr0, 'oneOf'"));
-      expect(output, contains('Expected exactly one subschema in #/properties/value/oneOf'));
+      expect(
+        output,
+        contains('Expected exactly one subschema in #/properties/value/oneOf'),
+      );
     });
   });
 }

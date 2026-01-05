@@ -1,4 +1,4 @@
-part of 'package:schema2model/src/generator.dart';
+part of 'package:schema2dart/src/generator.dart';
 
 /// Configuration used by [SchemaGenerator].
 class SchemaGeneratorOptions {
@@ -101,7 +101,8 @@ class SchemaGeneratorOptions {
       emitValidationHelpers:
           emitValidationHelpers ?? this.emitValidationHelpers,
       emitReadmeSnippets: emitReadmeSnippets ?? this.emitReadmeSnippets,
-      enableContentKeywords: enableContentKeywords ?? this.enableContentKeywords,
+      enableContentKeywords:
+          enableContentKeywords ?? this.enableContentKeywords,
       enableContentValidation:
           enableContentValidation ?? this.enableContentValidation,
       generateHelpers: generateHelpers ?? this.generateHelpers,

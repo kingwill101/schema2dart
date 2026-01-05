@@ -8,14 +8,18 @@ import 'validation_error.dart';
 class ArrayConstraintsExample {
   /// Array must contain at least 2 numbers >= 5
   final List<double>? containsExample;
+
   /// Array can have at most 10 items
   /// Constraints: maxItems: 10
   final List<double>? maxItems;
+
   /// Array must have at least 1 item
   /// Constraints: minItems: 1
   final List<String>? minItems;
+
   /// Fixed tuple with exactly 3 items
   final List<dynamic>? tupleArray;
+
   /// All items must be unique
   /// Constraints: uniqueItems: true
   final List<String>? uniqueItems;
@@ -30,15 +34,25 @@ class ArrayConstraintsExample {
 
   factory ArrayConstraintsExample.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
-    final containsExample = json['containsExample'] == null ? null : (json['containsExample'] as List).map((e) => e as double).toList();
+    final containsExample = json['containsExample'] == null
+        ? null
+        : (json['containsExample'] as List).map((e) => e as double).toList();
     remaining.remove('containsExample');
-    final maxItems = json['maxItems'] == null ? null : (json['maxItems'] as List).map((e) => e as double).toList();
+    final maxItems = json['maxItems'] == null
+        ? null
+        : (json['maxItems'] as List).map((e) => e as double).toList();
     remaining.remove('maxItems');
-    final minItems = json['minItems'] == null ? null : (json['minItems'] as List).map((e) => e as String).toList();
+    final minItems = json['minItems'] == null
+        ? null
+        : (json['minItems'] as List).map((e) => e as String).toList();
     remaining.remove('minItems');
-    final tupleArray = json['tupleArray'] == null ? null : (json['tupleArray'] as List).map((e) => e).toList();
+    final tupleArray = json['tupleArray'] == null
+        ? null
+        : (json['tupleArray'] as List).map((e) => e).toList();
     remaining.remove('tupleArray');
-    final uniqueItems = json['uniqueItems'] == null ? null : (json['uniqueItems'] as List).map((e) => e as String).toList();
+    final uniqueItems = json['uniqueItems'] == null
+        ? null
+        : (json['uniqueItems'] as List).map((e) => e as String).toList();
     remaining.remove('uniqueItems');
     return ArrayConstraintsExample(
       containsExample: containsExample,
@@ -76,26 +90,57 @@ class ArrayConstraintsExample {
       for (var i = 0; i < _lenp0; i++) {
         final itemPointer = appendJsonPointer(_ptr0, i.toString());
         final item = _value0[i];
-        final matches = true;
+        var matches = true;
+        if (matches) {
+          try {} on ValidationError {
+            matches = false;
+          }
+        }
         if (matches) {
           _containsCountp0++;
-          if (!_evaluatedp0[i]) { _evaluatedp0[i] = true; }
+          if (!_evaluatedp0[i]) {
+            _evaluatedp0[i] = true;
+          }
           context?.markItem(_ptr0, i);
         }
       }
       if (_containsCountp0 < 2) {
-        throwValidationError(_ptr0, 'contains', 'Expected at least 2 item(s) matching "contains" but found ' + _containsCountp0.toString() + '.');
+        throwValidationError(
+          _ptr0,
+          'contains',
+          'Expected at least 2 item(s) matching "contains" but found ' +
+              _containsCountp0.toString() +
+              '.',
+        );
       }
     }
     final _ptr1 = appendJsonPointer(pointer, 'maxItems');
     final _value1 = maxItems;
     if (_value1 != null) {
       context?.markProperty(pointer, 'maxItems');
+      if (_value1.length > 10) {
+        throwValidationError(
+          _ptr1,
+          'maxItems',
+          'Expected at most 10 items but found ' +
+              _value1.length.toString() +
+              '.',
+        );
+      }
     }
     final _ptr2 = appendJsonPointer(pointer, 'minItems');
     final _value2 = minItems;
     if (_value2 != null) {
       context?.markProperty(pointer, 'minItems');
+      if (_value2.length < 1) {
+        throwValidationError(
+          _ptr2,
+          'minItems',
+          'Expected at least 1 items but found ' +
+              _value2.length.toString() +
+              '.',
+        );
+      }
     }
     final _ptr3 = appendJsonPointer(pointer, 'tupleArray');
     final _value3 = tupleArray;
@@ -106,6 +151,20 @@ class ArrayConstraintsExample {
     final _value4 = uniqueItems;
     if (_value4 != null) {
       context?.markProperty(pointer, 'uniqueItems');
+      final _seenp4 = <String>{};
+      for (var i = 0; i < _value4.length; i++) {
+        final item = _value4[i];
+        final key = uniqueItemKey(item);
+        if (!_seenp4.add(key)) {
+          throwValidationError(
+            _ptr4,
+            'uniqueItems',
+            'Expected all items to be unique but found a duplicate at index ' +
+                i.toString() +
+                '.',
+          );
+        }
+      }
     }
   }
 }

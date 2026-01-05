@@ -8,8 +8,10 @@ class Person {
   /// Constraints: minimum: 0
   final int? age;
   final String? email;
+
   /// The person's first name
   final String firstName;
+
   /// The person's last name
   final String lastName;
 
@@ -53,7 +55,11 @@ class Person {
     if (_value0 != null) {
       context?.markProperty(pointer, 'age');
       if (_value0 < 0) {
-        throwValidationError(_ptr0, 'minimum', 'Expected value >= 0 but found ' + _value0.toString() + '.');
+        throwValidationError(
+          _ptr0,
+          'minimum',
+          'Expected value >= 0 but found ' + _value0.toString() + '.',
+        );
       }
     }
     final _ptr1 = appendJsonPointer(pointer, 'email');

@@ -6,14 +6,14 @@ enum Machine { linux, macos, windows }
 
 extension MachineJson on Machine {
   String toJson() => const {
-        Machine.linux: 'linux',
-        Machine.macos: 'macos',
-        Machine.windows: 'windows',
-      }[this]!;
+    Machine.linux: 'linux',
+    Machine.macos: 'macos',
+    Machine.windows: 'windows',
+  }[this]!;
 
   static Machine fromJson(String value) => const {
-        'linux': Machine.linux,
-        'macos': Machine.macos,
-        'windows': Machine.windows,
-      }[value]!;
+    'linux': Machine.linux,
+    'macos': Machine.macos,
+    'windows': Machine.windows,
+  }[value]!;
 }

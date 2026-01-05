@@ -10,35 +10,56 @@ sealed class RunsCompositeStepEnvObjectAdditionalProperty {
   void validate({String pointer = '', ValidationContext? context});
 
   factory RunsCompositeStepEnvObjectAdditionalProperty.fromJson(dynamic json) {
-    if (json is String) return RunsCompositeStepEnvObjectAdditionalPropertyString(json);
-    if (json is num) return RunsCompositeStepEnvObjectAdditionalPropertyNum(json);
-    if (json is bool) return RunsCompositeStepEnvObjectAdditionalPropertyBool(json);
-    throw ArgumentError('Invalid RunsCompositeStepEnvObjectAdditionalProperty value type: ${json.runtimeType}');
+    if (json is String)
+      return RunsCompositeStepEnvObjectAdditionalPropertyString(json);
+    if (json is num)
+      return RunsCompositeStepEnvObjectAdditionalPropertyNum(json.toDouble());
+    if (json is bool)
+      return RunsCompositeStepEnvObjectAdditionalPropertyBool(json);
+    throw ArgumentError(
+      'Invalid RunsCompositeStepEnvObjectAdditionalProperty value type: ${json.runtimeType}',
+    );
   }
 
   dynamic toJson();
 }
-class RunsCompositeStepEnvObjectAdditionalPropertyString extends RunsCompositeStepEnvObjectAdditionalProperty {
+
+class RunsCompositeStepEnvObjectAdditionalPropertyString
+    extends RunsCompositeStepEnvObjectAdditionalProperty {
   final String value;
 
-  const RunsCompositeStepEnvObjectAdditionalPropertyString(this.value) : super();
+  const RunsCompositeStepEnvObjectAdditionalPropertyString(this.value)
+    : super();
 
   @override
   dynamic toJson() => value;
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }
-class RunsCompositeStepEnvObjectAdditionalPropertyNum extends RunsCompositeStepEnvObjectAdditionalProperty {
+
+class RunsCompositeStepEnvObjectAdditionalPropertyNum
+    extends RunsCompositeStepEnvObjectAdditionalProperty {
   final double value;
 
   const RunsCompositeStepEnvObjectAdditionalPropertyNum(this.value) : super();
 
   @override
   dynamic toJson() => value;
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }
-class RunsCompositeStepEnvObjectAdditionalPropertyBool extends RunsCompositeStepEnvObjectAdditionalProperty {
+
+class RunsCompositeStepEnvObjectAdditionalPropertyBool
+    extends RunsCompositeStepEnvObjectAdditionalProperty {
   final bool value;
 
   const RunsCompositeStepEnvObjectAdditionalPropertyBool(this.value) : super();
 
   @override
   dynamic toJson() => value;
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }

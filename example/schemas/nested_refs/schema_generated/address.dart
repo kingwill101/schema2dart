@@ -9,11 +9,7 @@ class Address {
   final String? country;
   final String street;
 
-  const Address({
-    required this.city,
-    this.country,
-    required this.street,
-  });
+  const Address({required this.city, this.country, required this.street});
 
   factory Address.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
@@ -23,11 +19,7 @@ class Address {
     remaining.remove('country');
     final street = json['street'] as String;
     remaining.remove('street');
-    return Address(
-      city: city,
-      country: country,
-      street: street,
-    );
+    return Address(city: city, country: country, street: street);
   }
 
   Map<String, dynamic> toJson() {

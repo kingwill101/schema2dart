@@ -1,4 +1,4 @@
-import 'package:schema2model/schema2model.dart';
+import 'package:schema2dart/schema2dart.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -207,9 +207,7 @@ void main() {
       };
 
       final generator = SchemaGenerator(
-        options: const SchemaGeneratorOptions(
-          emitValidationHelpers: true,
-        ),
+        options: const SchemaGeneratorOptions(emitValidationHelpers: true),
       );
 
       final code = generator.generate(schema);

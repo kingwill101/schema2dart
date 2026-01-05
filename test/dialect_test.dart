@@ -1,15 +1,12 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
-  SchemaGenerator createGenerator({
-    SchemaGeneratorOptions? options,
-  }) {
+  SchemaGenerator createGenerator({SchemaGeneratorOptions? options}) {
     return SchemaGenerator(
-      options: options ??
-          const SchemaGeneratorOptions(
-            sourcePath: 'memory://schema.json',
-          ),
+      options:
+          options ??
+          const SchemaGeneratorOptions(sourcePath: 'memory://schema.json'),
     );
   }
 
@@ -124,9 +121,7 @@ void main() {
     });
 
     test('requires explicit dialect when default is disabled', () {
-      final schema = <String, dynamic>{
-        'type': 'object',
-      };
+      final schema = <String, dynamic>{'type': 'object'};
       final generator = createGenerator(
         options: const SchemaGeneratorOptions(
           sourcePath: 'memory://schema.json',

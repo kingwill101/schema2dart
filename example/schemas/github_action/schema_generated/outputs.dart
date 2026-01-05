@@ -10,9 +10,7 @@ import 'validation_error.dart';
 class Outputs {
   final Map<String, OutputsPatternProperty1>? patternProperties;
 
-  const Outputs({
-    this.patternProperties,
-  });
+  const Outputs({this.patternProperties});
 
   factory Outputs.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
@@ -26,23 +24,25 @@ class Outputs {
         final value = entry.value;
         var matched = false;
         if (!matched && RegExp('^[_a-zA-Z][a-zA-Z0-9_-]*\$').hasMatch(key)) {
-          patternPropertiesMap[key] = OutputsPatternProperty1.fromJson((value as Map).cast<String, dynamic>());
+          patternPropertiesMap[key] = OutputsPatternProperty1.fromJson(
+            (value as Map).cast<String, dynamic>(),
+          );
           matched = true;
         }
         if (!matched) {
           unmatchedAfterPattern[key] = value;
         }
       }
-      patternPropertiesValue = patternPropertiesMap.isEmpty ? null : patternPropertiesMap;
+      patternPropertiesValue = patternPropertiesMap.isEmpty
+          ? null
+          : patternPropertiesMap;
       unmatched = unmatchedAfterPattern;
     }
     if (unmatched.isNotEmpty) {
       final unexpected = unmatched.keys.join(', ');
       throw ArgumentError('Unexpected additional properties: $unexpected');
     }
-    return Outputs(
-      patternProperties: patternPropertiesValue,
-    );
+    return Outputs(patternProperties: patternPropertiesValue);
   }
 
   Map<String, dynamic> toJson() {

@@ -8,6 +8,7 @@ import 'validation_error.dart';
 class OutputsCompositePatternProperty1 {
   /// A string description of the output parameter.
   final String description;
+
   /// The value that the output parameter will be mapped to. You can set this to a string or an expression with context. For example, you can use the steps context to set the value of an output to the output value of a step.
   final String value;
 

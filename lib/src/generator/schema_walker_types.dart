@@ -1,4 +1,4 @@
-part of 'package:schema2model/src/generator.dart';
+part of 'package:schema2dart/src/generator.dart';
 
 class _SchemaCacheKey {
   _SchemaCacheKey(Uri uri, this.pointer) : uriKey = _normalizeUri(uri);

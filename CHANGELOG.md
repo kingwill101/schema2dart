@@ -26,4 +26,4 @@ Regenerate your code with `dart run build_runner build --delete-conflicting-outp
 
 ## 1.0.0
 
-- Initial release of `schema2model` (formerly schemamodeschema).
+- Initial release of `schema2dart` (formerly schemamodeschema).

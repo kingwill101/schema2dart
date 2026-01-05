@@ -1,4 +1,4 @@
-part of 'package:schema2model/src/generator.dart';
+part of 'package:schema2dart/src/generator.dart';
 
 abstract class TypeRef {
   const TypeRef();
@@ -129,10 +129,7 @@ class FalseTypeRef extends TypeRef {
   String dartType({bool nullable = false}) => nullable ? 'Object?' : 'Object?';
 
   @override
-  String deserializeInline(
-    String sourceExpression, {
-    required bool required,
-  }) =>
+  String deserializeInline(String sourceExpression, {required bool required}) =>
       sourceExpression;
 
   @override
@@ -171,7 +168,8 @@ class ValidatedTypeRef extends TypeRef {
   bool get isList => inner.isList;
 
   @override
-  String get identity => 'validated:${inner.identity}:${_rulesIdentity(validation)}';
+  String get identity =>
+      'validated:${inner.identity}:${_rulesIdentity(validation)}';
 
   static String _rulesIdentity(PropertyValidationRules rules) {
     final parts = <String>[];
@@ -202,7 +200,9 @@ class ValidatedTypeRef extends TypeRef {
     if (rules.multipleOf != null) parts.add('multipleOf=${rules.multipleOf}');
     if (rules.minItems != null) parts.add('minItems=${rules.minItems}');
     if (rules.maxItems != null) parts.add('maxItems=${rules.maxItems}');
-    if (rules.uniqueItems != null) parts.add('uniqueItems=${rules.uniqueItems}');
+    if (rules.uniqueItems != null) {
+      parts.add('uniqueItems=${rules.uniqueItems}');
+    }
     if (rules.minProperties != null) {
       parts.add('minProperties=${rules.minProperties}');
     }

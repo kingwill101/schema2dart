@@ -1,10 +1,10 @@
-// Example of using schema2model's standalone API
+// Example of using schema2dart's standalone API
 // Run with: dart run example.dart
 
-import 'package:schema2model/schema2model.dart';
+import 'package:schema2dart/schema2dart.dart';
 
 void main() {
-  print('=== schema2model Standalone API Example ===\n');
+  print('=== schema2dart Standalone API Example ===\n');
 
   basicExample();
 }

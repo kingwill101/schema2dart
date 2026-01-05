@@ -6,12 +6,12 @@ enum PermissionsObjectModels { read, none }
 
 extension PermissionsObjectModelsJson on PermissionsObjectModels {
   String toJson() => const {
-        PermissionsObjectModels.read: 'read',
-        PermissionsObjectModels.none: 'none',
-      }[this]!;
+    PermissionsObjectModels.read: 'read',
+    PermissionsObjectModels.none: 'none',
+  }[this]!;
 
   static PermissionsObjectModels fromJson(String value) => const {
-        'read': PermissionsObjectModels.read,
-        'none': PermissionsObjectModels.none,
-      }[value]!;
+    'read': PermissionsObjectModels.read,
+    'none': PermissionsObjectModels.none,
+  }[value]!;
 }

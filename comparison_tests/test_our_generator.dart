@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:schema2model/schema2model.dart';
+import 'package:schema2dart/schema2dart.dart';
 
 void main() async {
   print('=== Testing Our Generator ===\n');
@@ -9,8 +9,8 @@ void main() async {
     'nested_objects',
     'array_of_objects',
     'union_types',
-    'anyOf_objects',
-    'allOf_composition',
+    'any_of_objects',
+    'all_of_composition',
     'additional_properties',
     'definitions_refs',
   ];

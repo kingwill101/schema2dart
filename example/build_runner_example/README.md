@@ -1,6 +1,6 @@
 # Build Runner Example
 
-This example demonstrates how to use **schema2model** with `build_runner` to automatically generate Dart code from JSON schemas during your build process.
+This example demonstrates how to use **schema2dart** with `build_runner` to automatically generate Dart code from JSON schemas during your build process.
 
 ## 🎯 What This Shows
 
@@ -13,7 +13,7 @@ This example demonstrates how to use **schema2model** with `build_runner` to aut
 
 ```
 build_runner_example/
-├── pubspec.yaml              # Dependencies including schema2model
+├── pubspec.yaml              # Dependencies including schema2dart
 ├── build.yaml                # Generator configuration
 ├── lib/
 │   └── schemas/
@@ -62,7 +62,7 @@ You'll see:
 
 ```yaml
 dependencies:
-  schema2model:
+  schema2dart:
     path: ../../
 
 dev_dependencies:
@@ -77,7 +77,7 @@ Uses a path dependency to the root package.
 targets:
   $default:
     builders:
-      schema2model|schema_builder:
+      schema2dart|schema_builder:
         options:
           emit_validation_helpers: true
           include_globs:
@@ -148,7 +148,7 @@ import 'package:build_runner_example/schemas/user.dart';
 
 ## 📚 Next Steps
 
-- Check out [../schema2model_example.dart](../schema2model_example.dart) for API usage
+- Check out [../schema2dart_example.dart](../schema2dart_example.dart) for API usage
 - See [../schemas/](../schemas/) for more schema examples
 - Read [../../REFERENCE_GOVERNANCE.md](../../REFERENCE_GOVERNANCE.md) for security features
 

@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 
 void main() {
   group('OpenAPI nullable Keyword', () {
@@ -8,10 +8,7 @@ void main() {
         '\$schema': 'https://json-schema.org/draft/2020-12/schema',
         'type': 'object',
         'properties': {
-          'name': {
-            'type': 'string',
-            'nullable': true,
-          },
+          'name': {'type': 'string', 'nullable': true},
         },
         'required': ['name'],
       };
@@ -81,11 +78,7 @@ void main() {
         '\$schema': 'https://json-schema.org/draft/2020-12/schema',
         'type': 'object',
         'properties': {
-          'status': {
-            'type': 'string',
-            'nullable': true,
-            'default': null,
-          },
+          'status': {'type': 'string', 'nullable': true, 'default': null},
         },
       };
 
@@ -105,10 +98,7 @@ void main() {
         '\$schema': 'https://json-schema.org/draft/2020-12/schema',
         'type': 'object',
         'properties': {
-          'name': {
-            'type': 'string',
-            'nullable': false,
-          },
+          'name': {'type': 'string', 'nullable': false},
         },
         'required': ['name'],
       };
@@ -174,10 +164,7 @@ void main() {
         '\$schema': 'https://json-schema.org/draft/2020-12/schema',
         'type': 'object',
         'properties': {
-          'age': {
-            'type': 'integer',
-            'nullable': true,
-          },
+          'age': {'type': 'integer', 'nullable': true},
         },
         'required': ['age'],
       };

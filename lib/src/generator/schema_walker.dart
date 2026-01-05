@@ -1,4 +1,4 @@
-part of 'package:schema2model/src/generator.dart';
+part of 'package:schema2dart/src/generator.dart';
 
 /// Walks a JSON Schema graph and produces an intermediate representation that
 /// downstream emitters can translate into Dart source.
@@ -115,7 +115,8 @@ class _SchemaWalker {
 
       // Check if this location is a non-schema map (e.g., properties, patternProperties, dependentSchemas)
       // These maps have property/pattern names as keys, not schema keywords
-      final isNonSchemaMap = pointer.endsWith('/properties') ||
+      final isNonSchemaMap =
+          pointer.endsWith('/properties') ||
           pointer.endsWith('/patternProperties') ||
           pointer.endsWith('/dependentSchemas') ||
           pointer == '#/properties' ||
@@ -134,18 +135,23 @@ class _SchemaWalker {
         final dynamicAnchorValue = node[r'$dynamicAnchor'];
         if (dynamicAnchorValue is String && dynamicAnchorValue.isNotEmpty) {
           _registerDynamicAnchor(currentUri, dynamicAnchorValue, location);
-        } else if (dynamicAnchorValue != null && dynamicAnchorValue is! String) {
+        } else if (dynamicAnchorValue != null &&
+            dynamicAnchorValue is! String) {
           _schemaError('Expected "\$dynamicAnchor" to be a string', location);
         }
       }
 
       Uri effectiveUri = currentUri;
       var effectivePointer = pointer;
-      
+
       if (!isNonSchemaMap) {
         final idValue = node[r'$id'];
         if (idValue is String && idValue.isNotEmpty) {
-          final canonical = _resolveIdentifierUri(idValue, currentUri, location);
+          final canonical = _resolveIdentifierUri(
+            idValue,
+            currentUri,
+            location,
+          );
           _registerId(canonical, location);
           effectiveUri = canonical;
           effectivePointer = '#';
@@ -325,7 +331,7 @@ class _SchemaWalker {
       _typeCache[cacheKey] = ref;
       return ref;
     }
-    
+
     if (_inProgress.length >= _options.maxReferenceDepth) {
       _schemaError(
         'Maximum reference depth of ${_options.maxReferenceDepth} exceeded. '
@@ -333,7 +339,7 @@ class _SchemaWalker {
         location,
       );
     }
-    
+
     _inProgress.add(cacheKey);
 
     final pendingConstraints = <ConditionalConstraint>[];
@@ -428,7 +434,7 @@ class _SchemaWalker {
                 _nameFromPointer(location.pointer),
           );
           final description = workingSchema['description'] as String?;
-          
+
           // Group values by type
           final Map<String, List<dynamic>> valuesByType = {};
           for (final value in enumValues) {
@@ -448,19 +454,22 @@ class _SchemaWalker {
             }
             valuesByType.putIfAbsent(typeKey, () => []).add(value);
           }
-          
+
           // Create variants for each type
           final variants = <IrMixedEnumVariant>[];
           valuesByType.forEach((dartType, values) {
-            final className = '$enumName${dartType == 'null' ? 'Null' : dartType}';
-            variants.add(IrMixedEnumVariant(
-              className: className,
-              dartType: dartType,
-              values: values,
-              isNullable: dartType == 'null',
-            ));
+            final className =
+                '$enumName${dartType == 'null' ? 'Null' : dartType}';
+            variants.add(
+              IrMixedEnumVariant(
+                className: className,
+                dartType: dartType,
+                values: values,
+                isNullable: dartType == 'null',
+              ),
+            );
           });
-          
+
           final spec = _mixedEnums.putIfAbsent(
             enumName,
             () => IrMixedEnum(
@@ -470,7 +479,7 @@ class _SchemaWalker {
             ),
           );
           _mixedEnumByLocation[cacheKey] = spec;
-          
+
           final ref = MixedEnumTypeRef(spec);
           _typeCache[cacheKey] = ref;
           return ref;
@@ -549,8 +558,7 @@ class _SchemaWalker {
             deduped.add(entry);
           }
         }
-        final nonNullTypes =
-            deduped.where((value) => value != 'null').toList();
+        final nonNullTypes = deduped.where((value) => value != 'null').toList();
         if (nonNullTypes.length > 1 &&
             _isPrimitiveTypeUnion(nonNullTypes) &&
             _isTypeArrayUnionEligible(workingSchema)) {
@@ -572,16 +580,20 @@ class _SchemaWalker {
       final normalizedType = _normalizeTypeKeyword(type);
 
       // Treat schema with title (but no type) as an object
-      final hasObjectLikeProperties = workingSchema.containsKey('properties') ||
+      final hasObjectLikeProperties =
+          workingSchema.containsKey('properties') ||
           workingSchema.containsKey('patternProperties') ||
           workingSchema.containsKey('additionalProperties') ||
           workingSchema.containsKey('required') ||
           workingSchema.containsKey('dependentRequired') ||
           workingSchema.containsKey('dependentSchemas');
-      
-      final shouldBeObject = normalizedType == 'object' ||
+
+      final shouldBeObject =
+          normalizedType == 'object' ||
           hasObjectLikeProperties ||
-          (workingSchema.containsKey('title') && normalizedType == null && !workingSchema.containsKey('enum'));
+          (workingSchema.containsKey('title') &&
+              normalizedType == null &&
+              !workingSchema.containsKey('enum'));
 
       if (shouldBeObject) {
         final className = _allocateClassName(
@@ -964,8 +976,11 @@ class _SchemaWalker {
         return;
       }
       if (keyword == 'anyOf' || keyword == 'oneOf') {
-        final constraintBranches =
-            _extractConstraintOnlyUnion(location, raw.cast<dynamic>(), keyword);
+        final constraintBranches = _extractConstraintOnlyUnion(
+          location,
+          raw.cast<dynamic>(),
+          keyword,
+        );
         if (constraintBranches != null && constraintBranches.isNotEmpty) {
           return;
         }
@@ -987,10 +1002,7 @@ class _SchemaWalker {
           dialect: dialect,
         );
         branches.add(
-          ApplicatorBranch(
-            schemaPointer: branchPointer,
-            typeRef: typeRef,
-          ),
+          ApplicatorBranch(schemaPointer: branchPointer, typeRef: typeRef),
         );
       }
       if (branches.isNotEmpty) {
@@ -1011,7 +1023,10 @@ class _SchemaWalker {
     final notRaw = schema['not'];
     if (notRaw != null) {
       final notPointer = _pointerChild(location.pointer, 'not');
-      final branchLocation = _SchemaLocation(uri: location.uri, pointer: notPointer);
+      final branchLocation = _SchemaLocation(
+        uri: location.uri,
+        pointer: notPointer,
+      );
       final typeRef = _resolveSchemaWithValidation(
         notRaw,
         branchLocation,
@@ -1041,7 +1056,7 @@ class _SchemaWalker {
     if (typeRaw is List && typeRaw.contains('null')) {
       return true;
     }
-    
+
     // Check anyOf for null type
     if (schema['anyOf'] is List) {
       final anyOf = schema['anyOf'] as List;
@@ -1108,7 +1123,7 @@ class _SchemaWalker {
     if (resolvedMembers.isEmpty) {
       return const DynamicTypeRef();
     }
-    
+
     if (resolvedMembers.length == 1 && hasNullType) {
       // Single type + null = nullable version of that type
       final resolved = resolvedMembers.first;
@@ -1179,7 +1194,7 @@ class _SchemaWalker {
     }
 
     final cacheKey = _SchemaCacheKey(location.uri, location.pointer);
-    
+
     // If not all objects, check if all primitives are the same type
     if (!allObjects) {
       final first = variantTypes.first;
@@ -1229,12 +1244,15 @@ class _SchemaWalker {
       if (typeRef is ObjectTypeRef) {
         // Handle object variants
         final spec = typeRef.spec;
-        final requiredProperties = _requiredPropertiesFromSchema(resolved.schema);
+        final requiredProperties = _requiredPropertiesFromSchema(
+          resolved.schema,
+        );
         final constProperties = _constPropertiesFromSchema(resolved.schema);
-        
+
         final existingBase = spec.superClassName;
-        final isUnionBase =
-            _unions.any((union) => union.baseClass.name == spec.name);
+        final isUnionBase = _unions.any(
+          (union) => union.baseClass.name == spec.name,
+        );
 
         if (isUnionBase && spec.name != baseClass.name) {
           final variantName = _allocateClassName('$className${spec.name}');
@@ -1284,7 +1302,7 @@ class _SchemaWalker {
             conditionalConstraints: spec.conditionalConstraints,
           );
           _classes[variantName] = variantClass;
-          
+
           variants.add(
             IrUnionVariant(
               schemaPointer: resolved.location.pointer,
@@ -1309,7 +1327,9 @@ class _SchemaWalker {
         }
       } else {
         // Handle primitive variants (string, number, boolean, null)
-        final variantName = _allocateClassName('$className${_getTypeName(typeRef)}');
+        final variantName = _allocateClassName(
+          '$className${_getTypeName(typeRef)}',
+        );
         final primitiveClass = IrClass(
           name: variantName,
           description: null,
@@ -1320,7 +1340,7 @@ class _SchemaWalker {
           superClassName: baseClass.name,
         );
         _classes[variantName] = primitiveClass;
-        
+
         variants.add(
           IrUnionVariant(
             schemaPointer: resolved.location.pointer,
@@ -1666,8 +1686,11 @@ class _SchemaWalker {
     _SchemaLocation location,
   ) {
     if (schema.containsKey(r'$vocabulary') || location.pointer == '#') {
-      _formatAssertionRequired[location.uri] =
-          _requiresVocabulary(schema, dialect, 'https://json-schema.org/draft/2020-12/vocab/format-assertion');
+      _formatAssertionRequired[location.uri] = _requiresVocabulary(
+        schema,
+        dialect,
+        'https://json-schema.org/draft/2020-12/vocab/format-assertion',
+      );
     }
     final Object? vocab = schema['\$vocabulary'];
     if (vocab == null) {
@@ -1943,8 +1966,9 @@ class _SchemaWalker {
         // Use property name for the root class; otherwise prefix with parent
         // class to avoid collisions across nested object graphs.
         final propertyClass = _Naming.className(key);
-        final suggestedName =
-            spec.name == _rootClassName ? propertyClass : '${spec.name}$propertyClass';
+        final suggestedName = spec.name == _rootClassName
+            ? propertyClass
+            : '${spec.name}$propertyClass';
         var propertyType = _resolveSchemaWithApplicators(
           propertySchema,
           _SchemaLocation(uri: location.uri, pointer: propertyPointer),
@@ -1959,8 +1983,12 @@ class _SchemaWalker {
           final baseType = _unwrapApplicatorType(propertyType);
           if (baseType is PrimitiveTypeRef && baseType.typeName == 'String') {
             // Supported encodings: base64, base16, base32, quoted-printable
-            if (['base64', 'base16', 'base32', 'quoted-printable']
-                .contains(encoding)) {
+            if ([
+              'base64',
+              'base16',
+              'base32',
+              'quoted-printable',
+            ].contains(encoding)) {
               propertyType = _replaceApplicatorInner(
                 propertyType,
                 ContentEncodedTypeRef(encoding),
@@ -1974,7 +2002,7 @@ class _SchemaWalker {
         if (propertyMap != null) {
           schemaIsNullable = _isNullableComposition(propertyMap);
         }
-        
+
         final isRequired = requiredSet.contains(key) && !schemaIsNullable;
         final fieldName = _options.preferCamelCase
             ? _Naming.fieldName(key)
@@ -2015,22 +2043,24 @@ class _SchemaWalker {
         final contentEncoding = contentEnabled
             ? (propertyMap?['contentEncoding'] as String?)
             : null;
-        final contentSchema = (contentEnabled && propertyMap?['contentSchema'] is Map)
+        final contentSchema =
+            (contentEnabled && propertyMap?['contentSchema'] is Map)
             ? (propertyMap?['contentSchema'] as Map<String, dynamic>?)
             : null;
-        final contentSchemaTypeRef = (_options.enableContentValidation &&
-                contentSchema != null)
+        final contentSchemaTypeRef =
+            (_options.enableContentValidation && contentSchema != null)
             ? _resolveSchemaWithValidation(
                 contentSchema,
                 _SchemaLocation(
                   uri: location.uri,
                   pointer: _pointerChild(propertyPointer, 'contentSchema'),
                 ),
-                suggestedClassName: '${spec.name}${_Naming.className(key)}Content',
+                suggestedClassName:
+                    '${spec.name}${_Naming.className(key)}Content',
                 dialect: dialect,
               )
             : null;
-        
+
         final readOnly = propertyMap?['readOnly'] == true;
         final writeOnly = propertyMap?['writeOnly'] == true;
 
@@ -2189,7 +2219,8 @@ class _SchemaWalker {
     );
     var unique = base;
     var counter = 2;
-    while (_usedClassNames.contains(unique) || _usedEnumNames.contains(unique)) {
+    while (_usedClassNames.contains(unique) ||
+        _usedEnumNames.contains(unique)) {
       unique = '$base$counter';
       counter++;
     }
@@ -2224,7 +2255,8 @@ class _SchemaWalker {
     );
     var unique = base;
     var counter = 2;
-    while (_usedEnumNames.contains(unique) || _usedClassNames.contains(unique)) {
+    while (_usedEnumNames.contains(unique) ||
+        _usedClassNames.contains(unique)) {
       unique = '$base$counter';
       counter++;
     }
@@ -2262,17 +2294,17 @@ class _SchemaWalker {
         .split('/')
         .map(_unescapePointerToken)
         .toList();
-    
+
     // Track if we're directly under root properties
     bool afterRootProperties = false;
     int propertiesDepth = 0;
-    
+
     // Collect relevant segments (property names, etc)
     final relevantSegments = <String>[];
-    
+
     for (var i = 0; i < segments.length; i++) {
       final segment = segments[i];
-      
+
       // Track properties depth
       if (segment == 'properties') {
         propertiesDepth++;
@@ -2281,22 +2313,22 @@ class _SchemaWalker {
         }
         continue;
       }
-      
+
       // Skip other structural keywords
       if (segment == r'$defs' || segment == 'definitions') {
         continue;
       }
-      
+
       // Skip union keywords (oneOf, anyOf, allOf)
       if (segment == 'oneOf' || segment == 'anyOf' || segment == 'allOf') {
         continue;
       }
-      
+
       // Skip numeric array indices
       if (int.tryParse(segment) != null) {
         continue;
       }
-      
+
       // Special handling for 'items' - use parent property name with singularization
       if (segment == 'items' && relevantSegments.isNotEmpty) {
         final parentName = relevantSegments.last;
@@ -2307,29 +2339,29 @@ class _SchemaWalker {
         }
         continue;
       }
-      
+
       relevantSegments.add(segment);
     }
-    
+
     if (relevantSegments.isEmpty) {
       return 'Generated';
     }
-    
-    // If we're nested under root properties (like items array nested in root), 
+
+    // If we're nested under root properties (like items array nested in root),
     // prefix with RootSchema
     if (afterRootProperties && relevantSegments.isNotEmpty) {
       return 'RootSchema${relevantSegments.map(_Naming.className).join()}';
     }
-    
+
     // For single segments at definitions level, don't prefix
     if (relevantSegments.length == 1) {
       return _Naming.className(relevantSegments.first);
     }
-    
+
     // For other nested classes, join all segments
     return relevantSegments.map(_Naming.className).join();
   }
-  
+
   /// Extract the property name from a prefixed class name
   /// E.g., "RootSchemaUsers" -> "Users", "PubspecEnvironment" -> "Environment"
   String _extractPropertyName(String className) {
@@ -2347,7 +2379,7 @@ class _SchemaWalker {
   /// Simple singularization rules for array item names
   static String _singularize(String word) {
     if (word.isEmpty) return word;
-    
+
     // Common irregular plurals
     final irregulars = {
       'children': 'child',
@@ -2359,7 +2391,7 @@ class _SchemaWalker {
       'mice': 'mouse',
       'geese': 'goose',
     };
-    
+
     final lower = word.toLowerCase();
     if (irregulars.containsKey(lower)) {
       // Preserve original casing pattern
@@ -2369,7 +2401,7 @@ class _SchemaWalker {
       }
       return singular;
     }
-    
+
     // Rules for regular plurals
     if (word.endsWith('ies') && word.length > 3) {
       // entries -> entry, stories -> story
@@ -2399,7 +2431,7 @@ class _SchemaWalker {
       // users -> user, items -> item (but not class -> clas)
       return word.substring(0, word.length - 1);
     }
-    
+
     return word;
   }
 
@@ -3118,7 +3150,7 @@ class _SchemaWalker {
   Map<String, dynamic> _loadDocument(Uri uri) {
     // Remove fragment for document lookup - fragments point within a document
     final documentUri = uri.removeFragment();
-    
+
     final cached = _documentCache[documentUri];
     if (cached != null) {
       return cached;
@@ -3290,7 +3322,7 @@ class _SchemaWalker {
     if (title is String && title.trim().isNotEmpty) {
       return _Naming.className(title.trim());
     }
-    
+
     // Check for discriminator value
     if (schema != null && schema['properties'] is Map) {
       final props = schema['properties'] as Map;
@@ -3303,7 +3335,7 @@ class _SchemaWalker {
         }
       }
     }
-    
+
     // If the schema has a simple type, use the type name as suffix
     // This should come BEFORE checking pointer name for union variants
     if (schema != null && schema['type'] is String) {
@@ -3318,7 +3350,7 @@ class _SchemaWalker {
         pointerName != baseName) {
       return _Naming.className(pointerName);
     }
-    
+
     // For union variants without explicit type, don't use pointer name
     // as it conflicts with the base class name. Use a descriptive suffix instead.
     // This happens for object schemas without explicit type: "object"

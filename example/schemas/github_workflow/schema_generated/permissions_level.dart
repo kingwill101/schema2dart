@@ -6,14 +6,14 @@ enum PermissionsLevel { read, write, none }
 
 extension PermissionsLevelJson on PermissionsLevel {
   String toJson() => const {
-        PermissionsLevel.read: 'read',
-        PermissionsLevel.write: 'write',
-        PermissionsLevel.none: 'none',
-      }[this]!;
+    PermissionsLevel.read: 'read',
+    PermissionsLevel.write: 'write',
+    PermissionsLevel.none: 'none',
+  }[this]!;
 
   static PermissionsLevel fromJson(String value) => const {
-        'read': PermissionsLevel.read,
-        'write': PermissionsLevel.write,
-        'none': PermissionsLevel.none,
-      }[value]!;
+    'read': PermissionsLevel.read,
+    'write': PermissionsLevel.write,
+    'none': PermissionsLevel.none,
+  }[value]!;
 }

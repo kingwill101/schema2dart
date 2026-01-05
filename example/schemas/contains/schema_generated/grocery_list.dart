@@ -7,17 +7,15 @@ import 'validation_error.dart';
 class GroceryList {
   final List<String>? items;
 
-  const GroceryList({
-    this.items,
-  });
+  const GroceryList({this.items});
 
   factory GroceryList.fromJson(Map<String, dynamic> json) {
     final remaining = Map<String, dynamic>.from(json);
-    final items = json['items'] == null ? null : (json['items'] as List).map((e) => e as String).toList();
+    final items = json['items'] == null
+        ? null
+        : (json['items'] as List).map((e) => e as String).toList();
     remaining.remove('items');
-    return GroceryList(
-      items: items,
-    );
+    return GroceryList(items: items);
   }
 
   Map<String, dynamic> toJson() {
@@ -41,18 +39,32 @@ class GroceryList {
       for (var i = 0; i < _lenp0; i++) {
         final itemPointer = appendJsonPointer(_ptr0, i.toString());
         final item = _value0[i];
-        final matches = item is String;
+        var matches = item is String;
         if (matches) {
           _containsCountp0++;
-          if (!_evaluatedp0[i]) { _evaluatedp0[i] = true; }
+          if (!_evaluatedp0[i]) {
+            _evaluatedp0[i] = true;
+          }
           context?.markItem(_ptr0, i);
         }
       }
       if (_containsCountp0 < 2) {
-        throwValidationError(_ptr0, 'contains', 'Expected at least 2 item(s) matching "contains" but found ' + _containsCountp0.toString() + '.');
+        throwValidationError(
+          _ptr0,
+          'contains',
+          'Expected at least 2 item(s) matching "contains" but found ' +
+              _containsCountp0.toString() +
+              '.',
+        );
       }
       if (_containsCountp0 > 3) {
-        throwValidationError(_ptr0, 'contains', 'Expected at most 3 item(s) matching "contains" but found ' + _containsCountp0.toString() + '.');
+        throwValidationError(
+          _ptr0,
+          'contains',
+          'Expected at most 3 item(s) matching "contains" but found ' +
+              _containsCountp0.toString() +
+              '.',
+        );
       }
     }
   }

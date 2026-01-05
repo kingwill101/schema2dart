@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -21,15 +21,15 @@ void main() {
 
       // Should contain dart:convert import
       expect(generated, contains("import 'dart:convert';"));
-      
+
       // Should contain fromJson helper
       expect(generated, contains('User userFromJson(String str)'));
       expect(generated, contains('User.fromJson(json.decode(str)'));
-      
+
       // Should contain toJson helper
       expect(generated, contains('String userToJson(User data)'));
       expect(generated, contains('json.encode(data.toJson())'));
-      
+
       // Should have documentation
       expect(generated, contains('/// Parses [str] as JSON'));
       expect(generated, contains('/// Serializes [data] into a JSON string'));
@@ -69,8 +69,14 @@ void main() {
       final generated = generator.generate(schema);
 
       // Should use camelCase for function names
-      expect(generated, contains('GitHubRepository gitHubRepositoryFromJson(String str)'));
-      expect(generated, contains('String gitHubRepositoryToJson(GitHubRepository data)'));
+      expect(
+        generated,
+        contains('GitHubRepository gitHubRepositoryFromJson(String str)'),
+      );
+      expect(
+        generated,
+        contains('String gitHubRepositoryToJson(GitHubRepository data)'),
+      );
     });
 
     test('handles acronyms correctly in function names', () {
@@ -88,7 +94,10 @@ void main() {
       final generated = generator.generate(schema);
 
       // Class names get normalized to PascalCase (HTTPSConfig -> Httpsconfig)
-      expect(generated, contains('Httpsconfig httpsconfigFromJson(String str)'));
+      expect(
+        generated,
+        contains('Httpsconfig httpsconfigFromJson(String str)'),
+      );
       expect(generated, contains('String httpsconfigToJson(Httpsconfig data)'));
     });
   });

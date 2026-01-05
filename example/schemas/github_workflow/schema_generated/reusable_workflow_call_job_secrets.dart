@@ -4,19 +4,31 @@
 
 import 'env.dart';
 import 'reusable_workflow_call_job_secrets_string.dart';
+import 'validation_error.dart';
 
 /// When a job is used to call a reusable workflow, you can use 'secrets' to provide a map of secrets that are passed to the called workflow. Any secrets that you pass must match the names defined in the called workflow.
 sealed class ReusableWorkflowCallJobSecrets {
   const ReusableWorkflowCallJobSecrets();
 
+  void validate({String pointer = '', ValidationContext? context});
+
   factory ReusableWorkflowCallJobSecrets.fromJson(dynamic json) {
-    if (json is Map<String, dynamic>) return ReusableWorkflowCallJobSecretsEnv(Env.fromJson((json as Map).cast<String, dynamic>()));
-    if (json is String) return ReusableWorkflowCallJobSecretsValue(ReusableWorkflowCallJobSecretsStringJson.fromJson(json));
-    throw ArgumentError('Invalid ReusableWorkflowCallJobSecrets value type: ${json.runtimeType}');
+    if (json is Map<String, dynamic>)
+      return ReusableWorkflowCallJobSecretsEnv(
+        Env.fromJson((json as Map).cast<String, dynamic>()),
+      );
+    if (json is String)
+      return ReusableWorkflowCallJobSecretsValue(
+        ReusableWorkflowCallJobSecretsStringJson.fromJson(json),
+      );
+    throw ArgumentError(
+      'Invalid ReusableWorkflowCallJobSecrets value type: ${json.runtimeType}',
+    );
   }
 
   dynamic toJson();
 }
+
 /// To set custom environment variables, you need to specify the variables in the workflow file. You can define environment variables for a step, job, or entire workflow using the jobs.<job_id>.steps[*].env, jobs.<job_id>.env, and env keywords. For more information, see https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idstepsenv
 class ReusableWorkflowCallJobSecretsEnv extends ReusableWorkflowCallJobSecrets {
   final Env value;
@@ -25,12 +37,20 @@ class ReusableWorkflowCallJobSecretsEnv extends ReusableWorkflowCallJobSecrets {
 
   @override
   dynamic toJson() => value.toJson();
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }
-class ReusableWorkflowCallJobSecretsValue extends ReusableWorkflowCallJobSecrets {
+
+class ReusableWorkflowCallJobSecretsValue
+    extends ReusableWorkflowCallJobSecrets {
   final ReusableWorkflowCallJobSecretsString value;
 
   const ReusableWorkflowCallJobSecretsValue(this.value) : super();
 
   @override
   dynamic toJson() => value.toJson();
+
+  @override
+  void validate({String pointer = '', ValidationContext? context}) {}
 }

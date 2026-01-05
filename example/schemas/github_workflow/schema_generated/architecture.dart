@@ -6,14 +6,14 @@ enum Architecture { arm32, x64, x86 }
 
 extension ArchitectureJson on Architecture {
   String toJson() => const {
-        Architecture.arm32: 'ARM32',
-        Architecture.x64: 'x64',
-        Architecture.x86: 'x86',
-      }[this]!;
+    Architecture.arm32: 'ARM32',
+    Architecture.x64: 'x64',
+    Architecture.x86: 'x86',
+  }[this]!;
 
   static Architecture fromJson(String value) => const {
-        'ARM32': Architecture.arm32,
-        'x64': Architecture.x64,
-        'x86': Architecture.x86,
-      }[value]!;
+    'ARM32': Architecture.arm32,
+    'x64': Architecture.x64,
+    'x86': Architecture.x86,
+  }[value]!;
 }

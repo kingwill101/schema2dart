@@ -7,17 +7,20 @@ import 'validation_error.dart';
 /// Demonstrates readOnly and writeOnly properties
 class ReadOnlyWriteOnlyExample {
   /// Format: date-time (format hints disabled).
-  /// 
+  ///
   /// Date and time as defined by RFC 3339 date-time.
-  /// 
+  ///
   /// See https://json-schema.org/draft/2020-12/json-schema-validation.html#name-dates-times-and-duration.
   /// READ-ONLY: This property is managed by the server and should not be sent in requests.
   final String? createdAt;
+
   /// Auto-generated ID, cannot be set
   /// READ-ONLY: This property is managed by the server and should not be sent in requests.
   final String? id;
+
   /// Regular property, can be read and written
   final String name;
+
   /// Password for user, never returned in responses
   /// WRITE-ONLY: This property should not be included in responses (e.g., passwords, secrets).
   final String? password;

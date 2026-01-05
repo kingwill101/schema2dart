@@ -1,4 +1,4 @@
-import 'package:schema2model/src/generator.dart';
+import 'package:schema2dart/src/generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -7,11 +7,7 @@ void main() {
       const schema = <String, dynamic>{
         'type': 'object',
         'properties': {
-          'username': {
-            'type': 'string',
-            'minLength': 3,
-            'maxLength': 20,
-          },
+          'username': {'type': 'string', 'minLength': 3, 'maxLength': 20},
         },
       };
 

@@ -1,4 +1,4 @@
-part of 'package:schema2model/src/generator.dart';
+part of 'package:schema2dart/src/generator.dart';
 
 /// Utility helpers for transforming schema identifiers into Dart-friendly names.
 class _Naming {
@@ -30,10 +30,7 @@ class _Naming {
   }
 
   static String enumValue(String input) {
-    final sanitized = _sanitize(
-      input,
-      upperInitial: false,
-    );
+    final sanitized = _sanitize(input, upperInitial: false);
     final result = sanitized.isEmpty ? 'value' : sanitized;
     if (_reservedWords.contains(result)) {
       return '${result}_';
