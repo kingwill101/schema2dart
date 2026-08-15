@@ -11,6 +11,15 @@ class ObjectTypeRef extends TypeRef {
 
   @override
   String deserializeInline(String sourceExpression, {required bool required}) {
+    // Union bases with primitive variants (e.g. `string | int` like RequestId)
+    // take `dynamic` in fromJson, so pass the raw value — casting to a Map
+    // would throw at runtime for primitive wire values.
+    if (spec.deserializesFromDynamic) {
+      if (required) {
+        return '${spec.name}.fromJson($sourceExpression)';
+      }
+      return '$sourceExpression == null ? null : ${spec.name}.fromJson($sourceExpression)';
+    }
     final mapCast = '($sourceExpression as Map).cast<String, dynamic>()';
     if (required) {
       return '${spec.name}.fromJson($mapCast)';

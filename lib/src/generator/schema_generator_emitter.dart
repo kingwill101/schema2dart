@@ -306,7 +306,7 @@ class _SchemaEmitter {
       final discriminator = union.discriminator;
       if (discriminator != null && discriminator.mapping.isNotEmpty) {
         buffer.writeln(
-          "    final discriminator = json['${discriminator.propertyName}'];",
+          '    final discriminator = json[${_jsonKeyLiteral(discriminator.propertyName)}];',
         );
         buffer.writeln('    if (discriminator is String) {');
         buffer.writeln('      switch (discriminator) {');
@@ -345,7 +345,7 @@ class _SchemaEmitter {
           final conditions = variant.constProperties.entries
               .map((entry) {
                 final literal = _literalExpression(entry.value);
-                return "json['${entry.key}'] == $literal";
+                return 'json[${_jsonKeyLiteral(entry.key)}] == $literal';
               })
               .join(' && ');
           buffer.writeln('    if ($conditions) {');
@@ -381,7 +381,7 @@ class _SchemaEmitter {
         for (final variant in requiredVariants) {
           final conditions = variant.requiredProperties
               .map((prop) {
-                return "keys.contains('$prop')";
+                return 'keys.contains(${_jsonKeyLiteral(prop)})';
               })
               .join(' && ');
           buffer.writeln('    if ($conditions) {');
@@ -962,7 +962,9 @@ class _SchemaEmitter {
       } else {
         buffer.writeln('    final ${property.fieldName} = $expression;');
       }
-      buffer.writeln("    remaining.remove('${property.jsonName}');");
+      buffer.writeln(
+        '    remaining.remove(${_jsonKeyLiteral(property.jsonName)});',
+      );
     }
     if (needsUnmatched) {
       buffer.writeln(
@@ -1234,7 +1236,7 @@ class _SchemaEmitter {
       final valueVar = '_value$index';
       final suffix = 'p$index';
       buffer.writeln(
-        "    final $pointerVar = appendJsonPointer(pointer, '${property.jsonName}');",
+        '    final $pointerVar = appendJsonPointer(pointer, ${_jsonKeyLiteral(property.jsonName)});',
       );
       buffer.writeln('    final $valueVar = ${property.fieldName};');
       final isFalseSchema = property.typeRef is FalseTypeRef;
@@ -1270,7 +1272,7 @@ class _SchemaEmitter {
             suffix,
           );
           buffer.writeln(
-            "      context?.markProperty(pointer, '${property.jsonName}');",
+            '      context?.markProperty(pointer, ${_jsonKeyLiteral(property.jsonName)});',
           );
           _writeValidationBodyForProperty(
             buffer,
@@ -1283,8 +1285,7 @@ class _SchemaEmitter {
           buffer.writeln('    }');
         }
       } else {
-        buffer.writeln(
-          "    context?.markProperty(pointer, '${property.jsonName}');",
+        buffer.writeln(            '    context?.markProperty(pointer, ${_jsonKeyLiteral(property.jsonName)});',
         );
         if (isFalseSchema) {
           final message = _stringLiteral(

@@ -1,5 +1,22 @@
 part of 'package:schema2dart/src/generator.dart';
 
+/// Returns a Dart single-quoted string literal for [jsonName], safe to use as
+/// a JSON key in generated code. Keys containing `$` must not be emitted as
+/// `'$jsonName'` — that interpolates in Dart — so they are emitted as raw
+/// strings (or with escaped dollars when the key also contains quotes).
+String _jsonKeyLiteral(String jsonName) {
+  final canUseRaw =
+      !jsonName.contains("'") && !jsonName.contains(r'\') && !jsonName.contains(r'$');
+  if (!canUseRaw) {
+    final escaped = jsonName
+        .replaceAll(r'\', r'\\')
+        .replaceAll("'", r"\'")
+        .replaceAll(r'$', r'\$');
+    return "'$escaped'";
+  }
+  return "'$jsonName'";
+}
+
 /// Intermediate representation root describing the generated model set.
 class SchemaIr {
   SchemaIr({
@@ -37,6 +54,7 @@ class IrClass {
     Map<String, DependentSchemaConstraint>? dependentSchemas,
     this.propertyNamesConstraint,
     Map<String, Object?>? extensionAnnotations,
+    this.deserializesFromDynamic = false,
   }) : conditionalConstraints = List<ConditionalConstraint>.from(
          conditionalConstraints,
        ),
@@ -49,6 +67,11 @@ class IrClass {
   final String? description;
   final List<IrProperty> properties;
   bool allowAdditionalProperties;
+
+  /// True when this class is a union base whose `fromJson` accepts `dynamic`
+  /// (the union has at least one primitive variant, e.g. `string | int`).
+  /// Call sites must then pass the raw JSON value instead of casting to a Map.
+  bool deserializesFromDynamic;
   IrDynamicKeyField? additionalPropertiesField;
   IrPatternPropertyField? patternPropertiesField;
   final JsonConditionals? conditionals;
@@ -121,12 +144,12 @@ class IrProperty {
   String get dartType => typeRef.dartType(nullable: !isRequired);
 
   String deserializeExpression(String jsonVariable) {
-    final access = "$jsonVariable['$jsonName']";
+    final access = "$jsonVariable[${_jsonKeyLiteral(jsonName)}]";
     return typeRef.deserializeInline(access, required: isRequired);
   }
 
   String? serializeExpression(String mapVariable) {
-    final target = "$mapVariable['$jsonName']";
+    final target = "$mapVariable[${_jsonKeyLiteral(jsonName)}]";
 
     if (isRequired) {
       final value = typeRef.serializeInline(fieldName, required: true);

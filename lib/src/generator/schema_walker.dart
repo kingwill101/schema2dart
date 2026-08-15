@@ -1357,6 +1357,12 @@ class _SchemaWalker {
     final discriminator = _extractDiscriminator(schema);
     final linkedVariants = _applyDiscriminatorMapping(variants, discriminator);
 
+    // Mirrors `_renderUnionBase`: a union base deserializes from `dynamic` iff
+    // it has at least one primitive variant. ObjectTypeRef call sites rely on
+    // this flag to avoid casting primitive wire values to a Map.
+    baseClass.deserializesFromDynamic =
+        linkedVariants.any((variant) => variant.isPrimitive);
+
     _unions.add(
       IrUnion(
         name: className,
