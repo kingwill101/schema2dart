@@ -1354,7 +1354,13 @@ class _SchemaWalker {
       }
     }
 
-    final discriminator = _extractDiscriminator(schema);
+    // Many real-world JSON schemas encode a discriminator as a required
+    // single-value enum on each variant, without using the optional JSON
+    // Schema `discriminator` keyword. Infer that safe form so unions such as
+    // Codex's ThreadItem dispatch by their wire `type` value instead of
+    // falling through to overlapping required-property heuristics.
+    final discriminator =
+        _extractDiscriminator(schema) ?? _inferDiscriminator(resolvedMembers);
     final linkedVariants = _applyDiscriminatorMapping(variants, discriminator);
 
     // Mirrors `_renderUnionBase`: a union base deserializes from `dynamic` iff
@@ -3268,6 +3274,62 @@ class _SchemaWalker {
     }
     usedNames.add(candidate);
     return candidate;
+  }
+
+  UnionDiscriminator? _inferDiscriminator(List<_ResolvedSchema> variants) {
+    if (variants.length < 2) return null;
+
+    final candidates = <String, Map<String, String>>{};
+    for (final variant in variants) {
+      final properties = variant.schema?['properties'];
+      if (properties is! Map) return null;
+      final required = variant.schema?['required'];
+      for (final entry in properties.entries) {
+        final property = entry.value;
+        if (entry.key is! String ||
+            property is! Map ||
+            required is! List ||
+            !required.contains(entry.key)) {
+          continue;
+        }
+        final value = _singleStringEnumValue(property);
+        if (value == null) continue;
+        candidates.putIfAbsent(entry.key as String, () => <String, String>{});
+        final mapping = candidates[entry.key as String]!;
+        // Duplicate values cannot identify a unique variant.
+        if (mapping.containsKey(value)) {
+          mapping[value] = '';
+        } else {
+          mapping[value] = variant.location.pointer;
+        }
+      }
+    }
+
+    for (final entry in candidates.entries) {
+      final mapping = entry.value;
+      if (mapping.length != variants.length ||
+          mapping.values.any((pointer) => pointer.isEmpty)) {
+        continue;
+      }
+      final pointers = mapping.values.toSet();
+      if (pointers.length != variants.length) continue;
+      return UnionDiscriminator(
+        propertyName: entry.key,
+        mapping: Map.unmodifiable(mapping),
+      );
+    }
+    return null;
+  }
+
+  String? _singleStringEnumValue(Map property) {
+    final constValue = property['const'];
+    if (constValue is String) return constValue;
+    final enumValues = property['enum'];
+    if (enumValues is List && enumValues.length == 1) {
+      final value = enumValues.single;
+      if (value is String) return value;
+    }
+    return null;
   }
 
   UnionDiscriminator? _extractDiscriminator(Map<String, dynamic> schema) {

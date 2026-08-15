@@ -1189,7 +1189,14 @@ class _SchemaEmitter {
       buffer.writeln('    }');
     }
 
-    if (discriminatorKey != null && discriminatorValue != null) {
+    final hasDiscriminatorProperty =
+        discriminatorKey != null &&
+        klass.properties.any(
+          (property) => property.jsonName == discriminatorKey,
+        );
+    if (discriminatorKey != null &&
+        discriminatorValue != null &&
+        !hasDiscriminatorProperty) {
       buffer.writeln(
         "    map['$discriminatorKey'] = ${_stringLiteral(discriminatorValue)};",
       );

@@ -98,6 +98,45 @@ void main() {
       expect(output, isNot(contains('ShapeVariant')));
     });
 
+    test('single-value enum properties infer a discriminator', () {
+      const schema = <String, dynamic>{
+        '\$schema': 'https://json-schema.org/draft/2020-12/schema',
+        'title': 'Event',
+        'oneOf': [
+          {
+            'type': 'object',
+            'properties': {
+              'type': {
+                'type': 'string',
+                'enum': ['created'],
+              },
+              'id': {'type': 'string'},
+            },
+            'required': ['type', 'id'],
+          },
+          {
+            'type': 'object',
+            'properties': {
+              'type': {
+                'type': 'string',
+                'enum': ['deleted'],
+              },
+              'id': {'type': 'string'},
+            },
+            'required': ['type', 'id'],
+          },
+        ],
+      };
+
+      final output = SchemaGenerator(
+        options: const SchemaGeneratorOptions(),
+      ).generate(schema);
+
+      expect(output, contains("final discriminator = json['type'];"));
+      expect(output, contains("case 'created':"));
+      expect(output, contains("case 'deleted':"));
+    });
+
     test('nested objects should use property name', () {
       const schema = <String, dynamic>{
         '\$schema': 'https://json-schema.org/draft/2020-12/schema',
