@@ -1,6 +1,6 @@
 name: schema2dart
 description: Generate strongly typed Dart models from JSON Schema documents.
-version: 1.0.1
+version: 1.0.2
 repository: https://github.com/kingwill101/schema2dart
 issue_tracker: https://github.com/kingwill101/schema2dart/issues
 funding:

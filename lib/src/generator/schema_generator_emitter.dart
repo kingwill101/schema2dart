@@ -641,13 +641,39 @@ class _SchemaEmitter {
       }
     }
     if (typeRef is EnumTypeRef && value is String) {
-      return '${typeRef.spec.extensionName}.fromJson(${_stringLiteral(value)})';
+      // Const form (`EnumName.identifier`); the enum file is imported wherever
+      // the property's type references it.
+      final identifier = typeRef.spec.values
+          .where((v) => v.jsonValue == value)
+          .firstOrNull
+          ?.identifier;
+      if (identifier != null) {
+        return '${typeRef.spec.name}.$identifier';
+      }
+      return null;
     }
     if (typeRef is MixedEnumTypeRef) {
-      return '${typeRef.spec.name}.fromJson(${_literalExpression(value)})';
+      // `.fromJson(...)` is not const (illegal as a constructor default) and
+      // the mixed-enum type may not be imported into every referencing file.
+      return null;
+    }
+    if (typeRef is ListTypeRef && value is List) {
+      final items = <String>[];
+      for (final item in value) {
+        final literal = _defaultLiteralForType(typeRef.itemType, item);
+        if (literal == null) {
+          return null; // any unsafe element drops the whole default
+        }
+        items.add(literal);
+      }
+      return 'const [${items.join(', ')}]';
     }
     return _valueToLiteral(value);
   }
+
+  /// A generated default expression is const-able when it contains no
+  /// `.fromJson(...)` call (the only non-const construct the emitter produces).
+  bool _isConstLiteral(String literal) => !literal.contains('.fromJson(');
 
   IrUnionVariant? _selectUnionVariantForDefault(IrUnion union, Object? value) {
     if (value == null) {
@@ -691,23 +717,18 @@ class _SchemaEmitter {
 
   String? _unionDefaultExpression(IrUnionVariant variant, Object? value) {
     final className = variant.classSpec.name;
-    if (variant.isPrimitive) {
-      final primitive = variant.primitiveType!;
-      if (primitive is PrimitiveTypeRef) {
-        return 'const $className(${_valueToLiteral(value) ?? 'null'})';
-      }
-      if (primitive is ListTypeRef) {
-        final literal = _valueToLiteral(value) ?? 'const []';
-        return 'const $className($literal)';
-      }
-      if (primitive is EnumTypeRef && value is String) {
-        final enumValue =
-            '${primitive.spec.extensionName}.fromJson(${_stringLiteral(value)})';
-        return '$className($enumValue)';
-      }
-    } else if (value is Map) {
-      final literal = _valueToLiteral(value) ?? 'const {}';
-      return '$className.fromJson($literal)';
+    // Only primitive variants are safe defaults: the variant class lives in the
+    // union's file (imported wherever the union type is referenced) and the
+    // argument is a plain const literal. Enum / mixed-enum / object variants
+    // would reference types outside the importing file's scope and/or need
+    // non-const `.fromJson(...)` calls, which are invalid constructor defaults.
+    final primitive = variant.primitiveType;
+    if (variant.isPrimitive && primitive is PrimitiveTypeRef) {
+      return 'const $className(${_valueToLiteral(value) ?? 'null'})';
+    }
+    if (variant.isPrimitive && primitive is ListTypeRef) {
+      final literal = _valueToLiteral(value) ?? 'const []';
+      return 'const $className($literal)';
     }
     return null;
   }
@@ -904,7 +925,9 @@ class _SchemaEmitter {
           : null;
       if (property.isRequired) {
         buffer.writeln('    required this.${property.fieldName},');
-      } else if (defaultLiteral != null) {
+      } else if (defaultLiteral != null && _isConstLiteral(defaultLiteral)) {
+        // Constructor defaults must be const; non-const defaults (e.g. from
+        // `.fromJson(...)`) are still applied in fromJson, just not here.
         buffer.writeln('    this.${property.fieldName} = $defaultLiteral,');
       } else {
         buffer.writeln('    this.${property.fieldName},');
@@ -1292,7 +1315,8 @@ class _SchemaEmitter {
           buffer.writeln('    }');
         }
       } else {
-        buffer.writeln(            '    context?.markProperty(pointer, ${_jsonKeyLiteral(property.jsonName)});',
+        buffer.writeln(
+          '    context?.markProperty(pointer, ${_jsonKeyLiteral(property.jsonName)});',
         );
         if (isFalseSchema) {
           final message = _stringLiteral(

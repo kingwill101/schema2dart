@@ -1,3 +1,11 @@
+## 1.0.2
+
+- Fix `default` values on **array** properties whose item type is an enum or
+  union (e.g. a `List<InputModality>` with `default: ["text", "image"]`):
+  elements now convert through the item type (`.fromJson(...)`) instead of
+  being emitted as raw untyped literals, which produced invalid Dart. Arrays
+  containing only const-able literals still emit `const [...]`.
+
 ## 1.0.1
 
 - Fix call sites for refs to unions with primitive variants (e.g. `string | int`
