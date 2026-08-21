@@ -170,7 +170,6 @@ class Run extends Step {
     final map = <String, dynamic>{};
     map['run'] = run;
     map['type'] = type;
-    map['type'] = 'run';
     return map;
   }
 }
@@ -202,7 +201,6 @@ class Uses extends Step {
     final map = <String, dynamic>{};
     map['type'] = type;
     map['uses'] = uses;
-    map['type'] = 'uses';
     return map;
   }
 }
