@@ -382,12 +382,24 @@ class _SchemaEmitter {
           );
           buffer.writeln("    final constMatchNames = <String>[];");
           for (final variant in constVariants) {
-            final conditions = variant.constProperties.entries
+            var conditions = variant.constProperties.entries
                 .map((entry) {
                   final literal = _literalExpression(entry.value);
                   return 'json[${_jsonKeyLiteral(entry.key)}] == $literal';
                 })
                 .join(' && ');
+            final sharedConstants = constVariants.any(
+              (other) =>
+                  !identical(other, variant) &&
+                  const DeepCollectionEquality().equals(
+                    other.constProperties,
+                    variant.constProperties,
+                  ),
+            );
+            if (sharedConstants && variant.requiredProperties.isNotEmpty) {
+              conditions +=
+                  ' && ${variant.requiredProperties.map((property) => 'keys.contains(${_jsonKeyLiteral(property)})').join(' && ')}';
+            }
             buffer.writeln('    if ($conditions) {');
             buffer.writeln(
               '      constMatches.add(${variant.classSpec.name}.fromJson);',
