@@ -208,5 +208,83 @@ class Uses extends Step {
 
       expect(generated, expected);
     });
+
+    test('preserves object siblings when flattening nested unions', () {
+      const schema = <String, dynamic>{
+        'title': 'UserInput',
+        'oneOf': [
+          {
+            'title': 'ImageUserInput',
+            'type': 'object',
+            'properties': {
+              'detail': {'type': 'string'},
+              'type': {'const': 'image'},
+            },
+            'required': ['type'],
+            'anyOf': [
+              {
+                'title': 'UrlUserInput',
+                'properties': {
+                  'url': {'type': 'string'},
+                },
+                'required': ['url'],
+              },
+              {
+                'title': 'FileIdUserInput',
+                'properties': {
+                  'fileId': {'type': 'string'},
+                },
+                'required': ['fileId'],
+              },
+            ],
+          },
+        ],
+      };
+
+      final generator = SchemaGenerator(
+        options: const SchemaGeneratorOptions(),
+      );
+      final ir = generator.buildIr(schema);
+
+      expect(ir.unions, hasLength(1));
+      final union = ir.unions.single;
+      expect(union.name, 'UserInput');
+      expect(
+        union.variants.map((variant) => variant.classSpec.name),
+        containsAll(<String>['UrlUserInput', 'FileIdUserInput']),
+      );
+
+      final urlVariant = union.variants.firstWhere(
+        (variant) => variant.classSpec.name == 'UrlUserInput',
+      );
+      expect(
+        urlVariant.classSpec.properties.map((property) => property.jsonName),
+        containsAll(<String>['detail', 'type', 'url']),
+      );
+      expect(
+        urlVariant.requiredProperties,
+        containsAll(<String>['type', 'url']),
+      );
+
+      final fileIdVariant = union.variants.firstWhere(
+        (variant) => variant.classSpec.name == 'FileIdUserInput',
+      );
+      expect(
+        fileIdVariant.classSpec.properties.map((property) => property.jsonName),
+        containsAll(<String>['detail', 'type', 'fileId']),
+      );
+      expect(
+        fileIdVariant.requiredProperties,
+        containsAll(<String>['type', 'fileId']),
+      );
+
+      final generated = generator.generate(schema);
+      expect(
+        generated,
+        contains("if (detail != null) map['detail'] = detail;"),
+      );
+      expect(generated, contains("map['url'] = url;"));
+      expect(generated, contains("map['fileId'] = fileId;"));
+    });
   });
 }

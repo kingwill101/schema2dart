@@ -1078,6 +1078,63 @@ class _SchemaWalker {
     return false;
   }
 
+  Map<String, dynamic> _mergeUnionObjectBranch(
+    Map<String, dynamic> parent,
+    String unionKeyword,
+    Map<String, dynamic> branch,
+  ) {
+    final parentProperties = parent['properties'];
+    final parentRequired = parent['required'];
+    final hasObjectSiblings =
+        parentProperties is Map ||
+        parentRequired is List ||
+        _normalizeTypeKeyword(parent['type']) == 'object' ||
+        parent.containsKey('additionalProperties') ||
+        parent.containsKey('patternProperties') ||
+        parent.containsKey('unevaluatedProperties') ||
+        parent.containsKey('dependentRequired') ||
+        parent.containsKey('dependentSchemas');
+    if (!hasObjectSiblings) {
+      return branch;
+    }
+
+    final merged = <String, dynamic>{
+      for (final entry in parent.entries)
+        if (entry.key != unionKeyword) entry.key: entry.value,
+      ...branch,
+    };
+
+    final properties = <String, dynamic>{};
+    if (parentProperties is Map) {
+      properties.addAll(
+        parentProperties.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+    final branchProperties = branch['properties'];
+    if (branchProperties is Map) {
+      properties.addAll(
+        branchProperties.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+    if (properties.isNotEmpty) {
+      merged['properties'] = properties;
+    }
+
+    final required = <String>{};
+    if (parentRequired is List) {
+      required.addAll(parentRequired.whereType<String>());
+    }
+    final branchRequired = branch['required'];
+    if (branchRequired is List) {
+      required.addAll(branchRequired.whereType<String>());
+    }
+    if (required.isNotEmpty) {
+      merged['required'] = required.toList(growable: false);
+    }
+
+    return merged;
+  }
+
   TypeRef _resolveUnion(
     Map<String, dynamic> schema,
     _SchemaLocation location,
@@ -1088,7 +1145,16 @@ class _SchemaWalker {
   }) {
     final unionPointer = _pointerChild(location.pointer, keyword);
     final resolvedMembers = <_ResolvedSchema>[];
+    final resolvedMemberReferences = <bool>[];
     var hasNullType = false;
+
+    void addResolvedMember(
+      _ResolvedSchema resolved, {
+      required bool isReference,
+    }) {
+      resolvedMembers.add(resolved);
+      resolvedMemberReferences.add(isReference);
+    }
 
     for (var index = 0; index < members.length; index++) {
       final memberPointer = _pointerChild(unionPointer, '$index');
@@ -1103,11 +1169,112 @@ class _SchemaWalker {
           hasNullType = true;
           continue; // Skip null types from union processing
         }
+        final isReference = member.containsKey('\$ref');
+        final _ResolvedSchema resolved;
         if (member case {'\$ref': final String refValue}) {
-          resolvedMembers.add(_resolveReference(refValue, memberLocation));
+          resolved = _resolveReference(refValue, memberLocation);
         } else {
-          resolvedMembers.add(
-            _ResolvedSchema(schema: member, location: memberLocation),
+          resolved = _ResolvedSchema(schema: member, location: memberLocation);
+        }
+        final resolvedSchema = resolved.schema;
+
+        // A union branch may itself be an object schema with a nested union.
+        // Its sibling object keywords apply to every nested branch, so expand
+        // that shape before resolving the outer union. This keeps flat JSON
+        // payloads flat in the generated Dart classes.
+        final nestedKeyword = resolvedSchema == null
+            ? null
+            : resolvedSchema.containsKey('oneOf')
+            ? 'oneOf'
+            : resolvedSchema.containsKey('anyOf')
+            ? 'anyOf'
+            : null;
+        final nestedMembers = nestedKeyword == null
+            ? null
+            : resolvedSchema![nestedKeyword];
+        final expandsNestedUnion =
+            nestedMembers is List &&
+            nestedMembers.isNotEmpty &&
+            _extractConstraintOnlyUnion(
+                  resolved.location,
+                  nestedMembers,
+                  nestedKeyword!,
+                ) ==
+                null;
+        final nestedUnionMembers = expandsNestedUnion ? nestedMembers : null;
+        if (nestedUnionMembers != null) {
+          final nestedPointer = _pointerChild(
+            resolved.location.pointer,
+            nestedKeyword!,
+          );
+          for (
+            var nestedIndex = 0;
+            nestedIndex < nestedUnionMembers.length;
+            nestedIndex++
+          ) {
+            final nestedMember = nestedUnionMembers[nestedIndex];
+            if (nestedMember is! Map<String, dynamic>) {
+              throw ArgumentError.value(
+                nestedMember,
+                '$nestedKeyword/$nestedIndex',
+                'Union variants must be valid JSON Schema objects',
+              );
+            }
+            if (nestedMember['type'] == 'null') {
+              hasNullType = true;
+              continue;
+            }
+
+            final nestedLocation = _SchemaLocation(
+              uri: resolved.location.uri,
+              pointer: _pointerChild(nestedPointer, '$nestedIndex'),
+            );
+            final nestedIsReference = nestedMember.containsKey('\$ref');
+            final _ResolvedSchema nestedResolved;
+            if (nestedMember case {'\$ref': final String refValue}) {
+              nestedResolved = _resolveReference(refValue, nestedLocation);
+            } else {
+              nestedResolved = _ResolvedSchema(
+                schema: nestedMember,
+                location: nestedLocation,
+              );
+            }
+            final nestedSchema = nestedResolved.schema;
+            if (nestedSchema == null) {
+              addResolvedMember(nestedResolved, isReference: nestedIsReference);
+              continue;
+            }
+
+            var effectiveSchema = _mergeUnionObjectBranch(
+              resolvedSchema!,
+              nestedKeyword,
+              nestedSchema,
+            );
+            effectiveSchema = _mergeUnionObjectBranch(
+              schema,
+              keyword,
+              effectiveSchema,
+            );
+            addResolvedMember(
+              _ResolvedSchema(
+                schema: effectiveSchema,
+                location: nestedLocation,
+              ),
+              isReference: isReference || nestedIsReference,
+            );
+          }
+        } else {
+          final effectiveSchema = resolvedSchema == null
+              ? null
+              : _mergeUnionObjectBranch(schema, keyword, resolvedSchema);
+          addResolvedMember(
+            _ResolvedSchema(
+              schema: effectiveSchema,
+              location: effectiveSchema == resolvedSchema
+                  ? resolved.location
+                  : memberLocation,
+            ),
+            isReference: isReference,
           );
         }
       } else {
@@ -1150,7 +1317,6 @@ class _SchemaWalker {
     var allObjects = true;
     for (var index = 0; index < resolvedMembers.length; index++) {
       final resolved = resolvedMembers[index];
-      final originalMember = members[index];
       final variantName = _unionVariantSuggestion(
         schema['title'] as String? ??
             suggestedClassName ??
@@ -1174,9 +1340,7 @@ class _SchemaWalker {
         typeRef = EnumTypeRef(_enumByLocation[variantKey]!);
         _typeCache[variantKey] = typeRef;
       } else {
-        final bool isReference =
-            originalMember is Map<String, dynamic> &&
-            originalMember.containsKey('\$ref');
+        final isReference = resolvedMemberReferences[index];
         final childDialect = isReference
             ? _documentDialect(resolved.location.uri)
             : dialect;
