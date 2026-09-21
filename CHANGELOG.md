@@ -1,3 +1,9 @@
+## 1.0.3
+
+- Fix nested object unions with common sibling properties: generated variants
+  now preserve shared fields and their `anyOf`/`oneOf` payload fields during
+  deserialization and `toJson()` serialization.
+
 ## 1.0.2
 
 - Fix `default` values on **array** properties whose item type is an enum or
