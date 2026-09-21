@@ -110,11 +110,11 @@ void main() {
     );
   });
 
-  test('defaults referencing union-internal enums are dropped safely', () {
+  test('defaults referencing union-internal enums decode through the union', () {
     // The union's enum variant types live in a separate file; a default like
     // `[InputModalityValue(InputModalityString.text)]` would reference types
-    // not imported into this file. The generator must drop such defaults
-    // (field stays nullable) rather than emit uncompilable Dart.
+    // not imported into this file. Decode through the union's public factory
+    // at runtime rather than referencing an unimported enum in a const default.
     const schema = {
       'type': 'object',
       'properties': {
@@ -138,15 +138,15 @@ void main() {
     final generator = SchemaGenerator(options: const SchemaGeneratorOptions());
     final output = generator.generate(schema);
 
-    // No constructor default, no fromJson fallback — the field stays nullable
-    // but the generated code compiles.
+    // The constructor remains const; the decoder applies non-const defaults.
     expect(output, contains('final List<Modality>? modalities;'));
     expect(output, isNot(contains('this.modalities = ')));
     expect(
       output,
       contains(
-        "final modalities = json['modalities'] == null ? null : "
-        "(json['modalities'] as List).map((e) => Modality.fromJson(e)).toList();",
+        "final modalities = (json['modalities'] == null ? null : "
+        "(json['modalities'] as List).map((e) => Modality.fromJson(e)).toList()) ?? "
+        "[Modality.fromJson('text'), Modality.fromJson('image')];",
       ),
     );
   });

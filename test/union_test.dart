@@ -209,7 +209,7 @@ class Uses extends Step {
       expect(generated, expected);
     });
 
-    test('preserves object siblings when flattening nested unions', () {
+    test('preserves object siblings across nested union boundaries', () {
       const schema = <String, dynamic>{
         'title': 'UserInput',
         'oneOf': [
@@ -246,9 +246,11 @@ class Uses extends Step {
       );
       final ir = generator.buildIr(schema);
 
-      expect(ir.unions, hasLength(1));
-      final union = ir.unions.single;
-      expect(union.name, 'UserInput');
+      expect(ir.unions, hasLength(2));
+      final union = ir.unions.singleWhere(
+        (value) => value.name == 'ImageUserInput',
+      );
+      expect(ir.unions.any((value) => value.name == 'UserInput'), isTrue);
       expect(
         union.variants.map((variant) => variant.classSpec.name),
         containsAll(<String>['UrlUserInput', 'FileIdUserInput']),

@@ -225,7 +225,13 @@ class _SchemaEmitter {
 
     // Check if union contains any primitive variants
     final hasPrimitiveVariants = union.variants.any((v) => v.isPrimitive);
-    final hasObjectVariants = union.variants.any((v) => !v.isPrimitive);
+    bool isObjectVariant(IrUnionVariant variant) =>
+        !variant.isPrimitive ||
+        (variant.primitiveType is ObjectTypeRef &&
+            !(variant.primitiveType as ObjectTypeRef)
+                .spec
+                .deserializesFromDynamic);
+    final hasObjectVariants = union.variants.any(isObjectVariant);
 
     buffer.writeln('sealed class ${klass.name} {');
     buffer.writeln('  const ${klass.name}();');
@@ -243,7 +249,9 @@ class _SchemaEmitter {
 
     // For unions with primitive variants, try runtime type checking first
     if (hasPrimitiveVariants) {
-      for (final variant in union.variants.where((v) => v.isPrimitive)) {
+      for (final variant in union.variants.where(
+        (v) => v.isPrimitive && !isObjectVariant(v),
+      )) {
         final primitiveType = variant.primitiveType!;
         if (primitiveType is PrimitiveTypeRef) {
           switch (primitiveType.typeName) {
@@ -273,8 +281,11 @@ class _SchemaEmitter {
               );
           }
         } else if (primitiveType is EnumTypeRef) {
+          final values = primitiveType.spec.values
+              .map((value) => _stringLiteral(value.jsonValue))
+              .join(', ');
           buffer.writeln(
-            "    if (json is String) return ${variant.classSpec.name}(${primitiveType.spec.extensionName}.fromJson(json));",
+            "    if (json is String && const [$values].contains(json)) return ${variant.classSpec.name}(${primitiveType.spec.extensionName}.fromJson(json));",
           );
         } else if (primitiveType is MixedEnumTypeRef) {
           buffer.writeln(
@@ -329,91 +340,120 @@ class _SchemaEmitter {
       buffer.writeln('    final keys = json.keys.toSet();');
       buffer.writeln('    final sortedKeys = keys.toList()..sort();');
 
-      // Only process const/required variants for object variants
-      final constVariants = union.variants
-          .where(
-            (variant) =>
-                !variant.isPrimitive && variant.constProperties.isNotEmpty,
-          )
-          .toList();
-      if (constVariants.isNotEmpty) {
-        buffer.writeln(
-          '    final constMatches = <${klass.name} Function(Map<String, dynamic>)>[];',
-        );
-        buffer.writeln("    final constMatchNames = <String>[];");
-        for (final variant in constVariants) {
-          final conditions = variant.constProperties.entries
-              .map((entry) {
-                final literal = _literalExpression(entry.value);
-                return 'json[${_jsonKeyLiteral(entry.key)}] == $literal';
-              })
-              .join(' && ');
-          buffer.writeln('    if ($conditions) {');
+      if (union.keyword == 'anyOf') {
+        // anyOf permits overlap. Decode the first valid branch, whose model
+        // retains permitted additional properties for a lossless round-trip.
+        for (final variant in union.variants.where(isObjectVariant)) {
+          final conditions = [
+            for (final property in variant.requiredProperties)
+              'keys.contains(${_jsonKeyLiteral(property)})',
+            for (final entry in variant.constProperties.entries)
+              'json[${_jsonKeyLiteral(entry.key)}] == ${_literalExpression(entry.value)}',
+          ];
           buffer.writeln(
-            '      constMatches.add(${variant.classSpec.name}.fromJson);',
+            '    if (${conditions.isEmpty ? 'true' : conditions.join(' && ')}) {',
           );
+          buffer.writeln('      try {');
           buffer.writeln(
-            "      constMatchNames.add('${variant.classSpec.name}');",
+            '        return ${variant.classSpec.name}.fromJson(json);',
+          );
+          buffer.writeln('      } on ArgumentError {');
+          buffer.writeln('        // Try the next allowed branch.');
+          buffer.writeln('      } on TypeError {');
+          buffer.writeln('        // Try the next allowed branch.');
+          buffer.writeln('      }');
+          buffer.writeln('    }');
+        }
+        buffer.writeln(
+          "    throw ArgumentError('No ${klass.name} variant matched anyOf (keys: \${sortedKeys.join(', ')}).');",
+        );
+      } else {
+        // Only process const/required variants for object variants
+        final constVariants = union.variants
+            .where(
+              (variant) =>
+                  isObjectVariant(variant) &&
+                  variant.constProperties.isNotEmpty,
+            )
+            .toList();
+        if (constVariants.isNotEmpty) {
+          buffer.writeln(
+            '    final constMatches = <${klass.name} Function(Map<String, dynamic>)>[];',
+          );
+          buffer.writeln("    final constMatchNames = <String>[];");
+          for (final variant in constVariants) {
+            final conditions = variant.constProperties.entries
+                .map((entry) {
+                  final literal = _literalExpression(entry.value);
+                  return 'json[${_jsonKeyLiteral(entry.key)}] == $literal';
+                })
+                .join(' && ');
+            buffer.writeln('    if ($conditions) {');
+            buffer.writeln(
+              '      constMatches.add(${variant.classSpec.name}.fromJson);',
+            );
+            buffer.writeln(
+              "      constMatchNames.add('${variant.classSpec.name}');",
+            );
+            buffer.writeln('    }');
+          }
+          buffer.writeln('    if (constMatches.length == 1) {');
+          buffer.writeln('      return constMatches.single(json);');
+          buffer.writeln('    }');
+          buffer.writeln('    if (constMatches.length > 1) {');
+          buffer.writeln(
+            "      throw ArgumentError('Ambiguous ${klass.name} variant matched const heuristics: \${constMatchNames.join(', ')}');",
           );
           buffer.writeln('    }');
         }
-        buffer.writeln('    if (constMatches.length == 1) {');
-        buffer.writeln('      return constMatches.single(json);');
-        buffer.writeln('    }');
-        buffer.writeln('    if (constMatches.length > 1) {');
-        buffer.writeln(
-          "      throw ArgumentError('Ambiguous ${klass.name} variant matched const heuristics: \${constMatchNames.join(', ')}');",
-        );
-        buffer.writeln('    }');
-      }
 
-      final requiredVariants = union.variants
-          .where(
-            (variant) =>
-                !variant.isPrimitive && variant.requiredProperties.isNotEmpty,
-          )
-          .toList();
-      if (requiredVariants.isNotEmpty) {
-        buffer.writeln(
-          '    final requiredMatches = <${klass.name} Function(Map<String, dynamic>)>[];',
-        );
-        buffer.writeln("    final requiredMatchNames = <String>[];");
-        for (final variant in requiredVariants) {
-          final conditions = variant.requiredProperties
-              .map((prop) {
-                return 'keys.contains(${_jsonKeyLiteral(prop)})';
-              })
-              .join(' && ');
-          buffer.writeln('    if ($conditions) {');
+        final requiredVariants = union.variants
+            .where(
+              (variant) =>
+                  isObjectVariant(variant) &&
+                  variant.requiredProperties.isNotEmpty,
+            )
+            .toList();
+        if (requiredVariants.isNotEmpty) {
           buffer.writeln(
-            '      requiredMatches.add(${variant.classSpec.name}.fromJson);',
+            '    final requiredMatches = <${klass.name} Function(Map<String, dynamic>)>[];',
           );
+          buffer.writeln("    final requiredMatchNames = <String>[];");
+          for (final variant in requiredVariants) {
+            final conditions = variant.requiredProperties
+                .map((prop) {
+                  return 'keys.contains(${_jsonKeyLiteral(prop)})';
+                })
+                .join(' && ');
+            buffer.writeln('    if ($conditions) {');
+            buffer.writeln(
+              '      requiredMatches.add(${variant.classSpec.name}.fromJson);',
+            );
+            buffer.writeln(
+              "      requiredMatchNames.add('${variant.classSpec.name}');",
+            );
+            buffer.writeln('    }');
+          }
+          buffer.writeln('    if (requiredMatches.length == 1) {');
+          buffer.writeln('      return requiredMatches.single(json);');
+          buffer.writeln('    }');
+          buffer.writeln('    if (requiredMatches.length > 1) {');
           buffer.writeln(
-            "      requiredMatchNames.add('${variant.classSpec.name}');",
+            "      throw ArgumentError('Ambiguous ${klass.name} variant matched required-property heuristics: \${requiredMatchNames.join(', ')}');",
           );
           buffer.writeln('    }');
         }
-        buffer.writeln('    if (requiredMatches.length == 1) {');
-        buffer.writeln('      return requiredMatches.single(json);');
-        buffer.writeln('    }');
-        buffer.writeln('    if (requiredMatches.length > 1) {');
-        buffer.writeln(
-          "      throw ArgumentError('Ambiguous ${klass.name} variant matched required-property heuristics: \${requiredMatchNames.join(', ')}');",
-        );
-        buffer.writeln('    }');
-      }
 
-      final objectVariants = union.variants
-          .where((v) => !v.isPrimitive)
-          .toList();
-      if (objectVariants.length == 1) {
-        buffer.writeln(
-          '    return ${objectVariants.single.classSpec.name}.fromJson(json);',
-        );
-      } else if (objectVariants.isNotEmpty) {
-        buffer.writeln(
-          "    throw ArgumentError('No ${klass.name} variant matched heuristics (keys: \${sortedKeys.join(', ')}).');",
-        );
+        final objectVariants = union.variants.where(isObjectVariant).toList();
+        if (objectVariants.length == 1) {
+          buffer.writeln(
+            '    return ${objectVariants.single.classSpec.name}.fromJson(json);',
+          );
+        } else if (objectVariants.isNotEmpty) {
+          buffer.writeln(
+            "    throw ArgumentError('No ${klass.name} variant matched heuristics (keys: \${sortedKeys.join(', ')}).');",
+          );
+        }
       }
     } else {
       // No object variants, only primitives  - should not reach here due to early returns
@@ -457,6 +497,15 @@ class _SchemaEmitter {
       buffer.writeln();
       buffer.writeln('  const ${klass.name}(this.value) : super();');
       buffer.writeln();
+      if (primitiveType is ObjectTypeRef) {
+        buffer.writeln(
+          '  factory ${klass.name}.fromJson(Map<String, dynamic> json) =>',
+        );
+        buffer.writeln(
+          '      ${klass.name}(${primitiveType.deserializeInline('json', required: true)});',
+        );
+        buffer.writeln();
+      }
       buffer.writeln('  @override');
       buffer.writeln('  dynamic toJson() => $serialized;');
       if (options.emitValidationHelpers) {
@@ -636,7 +685,8 @@ class _SchemaEmitter {
       if (union != null) {
         final variant = _selectUnionVariantForDefault(union, value);
         if (variant != null) {
-          return _unionDefaultExpression(variant, value);
+          return _unionDefaultExpression(variant, value) ??
+              '${union.name}.fromJson(${_valueToLiteral(value)})';
         }
       }
     }
@@ -666,7 +716,8 @@ class _SchemaEmitter {
         }
         items.add(literal);
       }
-      return 'const [${items.join(', ')}]';
+      final prefix = items.every(_isConstLiteral) ? 'const ' : '';
+      return '$prefix[${items.join(', ')}]';
     }
     return _valueToLiteral(value);
   }
@@ -700,7 +751,9 @@ class _SchemaEmitter {
         }
       } else if (primitive is ListTypeRef && value is List) {
         return variant;
-      } else if (primitive is EnumTypeRef && value is String) {
+      } else if (primitive is EnumTypeRef &&
+          value is String &&
+          primitive.spec.values.any((entry) => entry.jsonValue == value)) {
         return variant;
       }
     }

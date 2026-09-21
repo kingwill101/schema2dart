@@ -1,3 +1,10 @@
+## 1.0.4
+
+- Preserve shared fields and payloads across nested `anyOf` and `oneOf`
+  object unions, including overlapping source fields during round trips.
+- Keep named union types through nullable references and annotated `allOf`
+  wrappers, and decode union-based defaults through their public factories.
+
 ## 1.0.3
 
 - Fix nested object unions with common sibling properties: generated variants

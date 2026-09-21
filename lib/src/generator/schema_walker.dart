@@ -390,6 +390,31 @@ class _SchemaWalker {
       if (workingSchema case {
         'allOf': final List allOf,
       } when allOf.isNotEmpty) {
+        const annotations = {
+          'allOf',
+          'title',
+          'description',
+          'default',
+          'examples',
+          'deprecated',
+          'readOnly',
+          'writeOnly',
+          r'$comment',
+        };
+        if (allOf.length == 1 &&
+            workingSchema.keys.every(annotations.contains)) {
+          if (allOf.single case {r'$ref': final String reference}) {
+            final resolved = _resolveReference(reference, location);
+            final typeRef = _resolveSchema(
+              resolved.schema,
+              resolved.location,
+              suggestedClassName: _nameFromPointer(resolved.location.pointer),
+              dialect: _documentDialect(resolved.location.uri),
+            );
+            _typeCache[cacheKey] = typeRef;
+            return typeRef;
+          }
+        }
         workingSchema = _mergeAllOfSchemas(workingSchema, location);
       }
 
@@ -1178,105 +1203,21 @@ class _SchemaWalker {
         }
         final resolvedSchema = resolved.schema;
 
-        // A union branch may itself be an object schema with a nested union.
-        // Its sibling object keywords apply to every nested branch, so expand
-        // that shape before resolving the outer union. This keeps flat JSON
-        // payloads flat in the generated Dart classes.
-        final nestedKeyword = resolvedSchema == null
+        // Preserve nested applicator boundaries: flattening anyOf into oneOf
+        // changes overlap semantics and erases the outer discriminator. A
+        // nullable reference must likewise retain its named target identity.
+        final effectiveSchema = resolvedSchema == null
             ? null
-            : resolvedSchema.containsKey('oneOf')
-            ? 'oneOf'
-            : resolvedSchema.containsKey('anyOf')
-            ? 'anyOf'
-            : null;
-        final nestedMembers = nestedKeyword == null
-            ? null
-            : resolvedSchema![nestedKeyword];
-        final expandsNestedUnion =
-            nestedMembers is List &&
-            nestedMembers.isNotEmpty &&
-            _extractConstraintOnlyUnion(
-                  resolved.location,
-                  nestedMembers,
-                  nestedKeyword!,
-                ) ==
-                null;
-        final nestedUnionMembers = expandsNestedUnion ? nestedMembers : null;
-        if (nestedUnionMembers != null) {
-          final nestedPointer = _pointerChild(
-            resolved.location.pointer,
-            nestedKeyword!,
-          );
-          for (
-            var nestedIndex = 0;
-            nestedIndex < nestedUnionMembers.length;
-            nestedIndex++
-          ) {
-            final nestedMember = nestedUnionMembers[nestedIndex];
-            if (nestedMember is! Map<String, dynamic>) {
-              throw ArgumentError.value(
-                nestedMember,
-                '$nestedKeyword/$nestedIndex',
-                'Union variants must be valid JSON Schema objects',
-              );
-            }
-            if (nestedMember['type'] == 'null') {
-              hasNullType = true;
-              continue;
-            }
-
-            final nestedLocation = _SchemaLocation(
-              uri: resolved.location.uri,
-              pointer: _pointerChild(nestedPointer, '$nestedIndex'),
-            );
-            final nestedIsReference = nestedMember.containsKey('\$ref');
-            final _ResolvedSchema nestedResolved;
-            if (nestedMember case {'\$ref': final String refValue}) {
-              nestedResolved = _resolveReference(refValue, nestedLocation);
-            } else {
-              nestedResolved = _ResolvedSchema(
-                schema: nestedMember,
-                location: nestedLocation,
-              );
-            }
-            final nestedSchema = nestedResolved.schema;
-            if (nestedSchema == null) {
-              addResolvedMember(nestedResolved, isReference: nestedIsReference);
-              continue;
-            }
-
-            var effectiveSchema = _mergeUnionObjectBranch(
-              resolvedSchema!,
-              nestedKeyword,
-              nestedSchema,
-            );
-            effectiveSchema = _mergeUnionObjectBranch(
-              schema,
-              keyword,
-              effectiveSchema,
-            );
-            addResolvedMember(
-              _ResolvedSchema(
-                schema: effectiveSchema,
-                location: nestedLocation,
-              ),
-              isReference: isReference || nestedIsReference,
-            );
-          }
-        } else {
-          final effectiveSchema = resolvedSchema == null
-              ? null
-              : _mergeUnionObjectBranch(schema, keyword, resolvedSchema);
-          addResolvedMember(
-            _ResolvedSchema(
-              schema: effectiveSchema,
-              location: effectiveSchema == resolvedSchema
-                  ? resolved.location
-                  : memberLocation,
-            ),
-            isReference: isReference,
-          );
-        }
+            : _mergeUnionObjectBranch(schema, keyword, resolvedSchema);
+        addResolvedMember(
+          _ResolvedSchema(
+            schema: effectiveSchema,
+            location: effectiveSchema == resolvedSchema
+                ? resolved.location
+                : memberLocation,
+          ),
+          isReference: isReference,
+        );
       } else {
         throw ArgumentError.value(
           member,
@@ -1408,6 +1349,23 @@ class _SchemaWalker {
       if (typeRef is ObjectTypeRef) {
         // Handle object variants
         final spec = typeRef.spec;
+        // An anyOf value can satisfy several branches. Preserve additional
+        // fields accepted by the selected branch, including another branch's
+        // source fields, instead of dropping them during its round-trip.
+        if (keyword == 'anyOf' &&
+            spec.allowAdditionalProperties &&
+            spec.additionalPropertiesField == null) {
+          final usedNames = spec.properties
+              .map((property) => property.fieldName)
+              .toSet();
+          spec.additionalPropertiesField = IrDynamicKeyField(
+            fieldName: _allocateDynamicFieldName(
+              usedNames,
+              'additionalProperties',
+            ),
+            valueType: const DynamicTypeRef(),
+          );
+        }
         final requiredProperties = _requiredPropertiesFromSchema(
           resolved.schema,
         );
@@ -1530,8 +1488,9 @@ class _SchemaWalker {
     // Mirrors `_renderUnionBase`: a union base deserializes from `dynamic` iff
     // it has at least one primitive variant. ObjectTypeRef call sites rely on
     // this flag to avoid casting primitive wire values to a Map.
-    baseClass.deserializesFromDynamic =
-        linkedVariants.any((variant) => variant.isPrimitive);
+    baseClass.deserializesFromDynamic = linkedVariants.any(
+      (variant) => variant.isPrimitive,
+    );
 
     _unions.add(
       IrUnion(
@@ -3540,6 +3499,7 @@ class _SchemaWalker {
         discriminatorValue: discriminatorValue,
         requiredProperties: variant.requiredProperties,
         constProperties: variant.constProperties,
+        primitiveType: variant.primitiveType,
       );
     }).toList();
   }
